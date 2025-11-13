@@ -1,0 +1,86 @@
+import { Apartment } from "@/types/apartment";
+import apartment1 from "@/assets/apartment-1.jpg";
+import apartment2 from "@/assets/apartment-2.jpg";
+import apartment3 from "@/assets/apartment-3.jpg";
+import apartment4 from "@/assets/apartment-4.jpg";
+
+export const mockApartments: Apartment[] = [
+  {
+    id: "1",
+    title: "Modern Downtown Loft",
+    address: "123 Main Street, Downtown",
+    price: 2500,
+    bedrooms: 2,
+    bathrooms: 2,
+    area: 1200,
+    description: "Beautiful modern loft in the heart of downtown with stunning city views. Features high ceilings, hardwood floors, and floor-to-ceiling windows.",
+    images: [apartment1, apartment2, apartment3, apartment4],
+    availableFrom: new Date("2024-03-01"),
+    amenities: ["Parking", "Gym", "Pool", "Balcony", "Pet Friendly"]
+  },
+  {
+    id: "2",
+    title: "Cozy Studio Apartment",
+    address: "456 Oak Avenue, Midtown",
+    price: 1500,
+    bedrooms: 1,
+    bathrooms: 1,
+    area: 650,
+    description: "Charming studio apartment perfect for singles or couples. Recently renovated with modern appliances and finishes.",
+    images: [apartment2, apartment1, apartment3],
+    availableFrom: new Date("2024-02-15"),
+    amenities: ["Laundry", "Air Conditioning", "Storage"]
+  },
+  {
+    id: "3",
+    title: "Spacious Family Home",
+    address: "789 Elm Street, Suburbs",
+    price: 3200,
+    bedrooms: 3,
+    bathrooms: 2.5,
+    area: 1800,
+    description: "Perfect family home with spacious rooms and a large backyard. Close to schools and parks.",
+    images: [apartment3, apartment4, apartment1],
+    availableFrom: new Date("2024-04-01"),
+    amenities: ["Garden", "Garage", "Fireplace", "Pet Friendly"]
+  },
+  {
+    id: "4",
+    title: "Luxury Penthouse",
+    address: "321 Sky Tower, Financial District",
+    price: 5000,
+    bedrooms: 3,
+    bathrooms: 3,
+    area: 2500,
+    description: "Stunning penthouse with panoramic city views. Features top-of-the-line finishes, private terrace, and concierge service.",
+    images: [apartment4, apartment2, apartment1, apartment3],
+    availableFrom: new Date("2024-03-15"),
+    amenities: ["Concierge", "Pool", "Gym", "Parking", "Balcony", "Security"]
+  },
+  {
+    id: "5",
+    title: "Charming Studio",
+    address: "567 Pine Lane, Arts District",
+    price: 1800,
+    bedrooms: 1,
+    bathrooms: 1,
+    area: 700,
+    description: "Artistic studio in vibrant neighborhood. High ceilings and natural light throughout.",
+    images: [apartment1, apartment3],
+    availableFrom: new Date("2024-02-20"),
+    amenities: ["Air Conditioning", "Storage", "Pet Friendly"]
+  },
+  {
+    id: "6",
+    title: "Contemporary 2BR",
+    address: "890 Maple Road, Westside",
+    price: 2800,
+    bedrooms: 2,
+    bathrooms: 2,
+    area: 1100,
+    description: "Modern apartment with open floor plan and designer kitchen. Walking distance to shops and restaurants.",
+    images: [apartment2, apartment4, apartment3],
+    availableFrom: new Date("2024-03-10"),
+    amenities: ["Parking", "Gym", "Balcony", "Laundry"]
+  }
+];
