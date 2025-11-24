@@ -3,7 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { CalendarIcon, Search } from "lucide-react";
@@ -12,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 interface FilterSectionProps {
   onFilterChange: (filters: FilterState) => void;
+  filtersProps: FilterState;
 }
 
 export interface FilterState {
@@ -21,15 +28,16 @@ export interface FilterState {
   maxPrice: string;
 }
 
-export const FilterSection = ({ onFilterChange }: FilterSectionProps) => {
-  const [filters, setFilters] = useState<FilterState>({
-    bedrooms: "all",
-    address: "",
-    date: undefined,
-    maxPrice: ""
-  });
+export const FilterSection = ({
+  onFilterChange,
+  filtersProps,
+}: FilterSectionProps) => {
+  const [filters, setFilters] = useState<FilterState>(filtersProps);
 
-  const handleFilterChange = (key: keyof FilterState, value: string | Date | undefined) => {
+  const handleFilterChange = (
+    key: keyof FilterState,
+    value: string | Date | undefined
+  ) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilterChange(newFilters);
@@ -40,7 +48,7 @@ export const FilterSection = ({ onFilterChange }: FilterSectionProps) => {
       bedrooms: "all",
       address: "",
       date: undefined,
-      maxPrice: ""
+      maxPrice: "",
     };
     setFilters(resetFilters);
     onFilterChange(resetFilters);
@@ -67,7 +75,10 @@ export const FilterSection = ({ onFilterChange }: FilterSectionProps) => {
 
         <div>
           <Label htmlFor="bedrooms">Bedrooms</Label>
-          <Select value={filters.bedrooms} onValueChange={(value) => handleFilterChange("bedrooms", value)}>
+          <Select
+            value={filters.bedrooms}
+            onValueChange={(value) => handleFilterChange("bedrooms", value)}
+          >
             <SelectTrigger id="bedrooms">
               <SelectValue placeholder="Any" />
             </SelectTrigger>
@@ -103,7 +114,11 @@ export const FilterSection = ({ onFilterChange }: FilterSectionProps) => {
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {filters.date ? format(filters.date, "PPP") : <span>Pick a date</span>}
+                {filters.date ? (
+                  format(filters.date, "PPP")
+                ) : (
+                  <span>Pick a date</span>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">

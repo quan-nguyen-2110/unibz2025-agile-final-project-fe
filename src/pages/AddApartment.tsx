@@ -6,45 +6,124 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ArrowLeft, Upload } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, ArrowLeft, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import axios from "axios";
 
 const AddApartment = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const API_URL =
+    (import.meta.env.VITE_API_URL || "https://localhost:7147") +
+    "/api/Apartment";
+
   const [formData, setFormData] = useState({
     title: "",
     address: "",
-    price: "",
-    bedrooms: "",
-    bathrooms: "",
-    area: "",
+    price: 0,
+    area: 0,
+    floor: 0,
+    bedrooms: 0,
+    bathrooms: 0,
     description: "",
     amenities: "",
-    date: undefined as Date | undefined
+    availableFrom: undefined as Date | undefined,
+
+    //testing
+    code: "a2",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [base64Images, setBase64Images] = useState<string[]>([]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Apartment listing created successfully!");
-    // Reset form
-    setFormData({
-      title: "",
-      address: "",
-      price: "",
-      bedrooms: "",
-      bathrooms: "",
-      area: "",
-      description: "",
-      amenities: "",
-      date: undefined
-    });
+    if (base64Images.length === 0) {
+      toast.error("Please add at least one image");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      availableFrom: formData.availableFrom
+        ? formData.availableFrom.toISOString()
+        : null,
+      base64Images: base64Images,
+    };
+
+    try {
+      setIsSubmitting(true);
+      const response = await axios.post(`${API_URL}`, payload);
+      console.log("Success:", response.data);
+
+      setFormData({
+        title: "",
+        address: "",
+        price: 0,
+        bedrooms: 0,
+        bathrooms: 0,
+        area: 0,
+        floor: 0,
+        description: "",
+        amenities: "",
+        availableFrom: undefined,
+
+        code: "a2",
+      });
+      setBase64Images([]);
+
+      toast.success("Apartment listing created successfully!");
+
+      setIsSubmitting(false);
+    } catch (error) {
+      toast.error("Error submitting property:", error);
+    }
   };
 
   const handleChange = (field: string, value: string | Date | undefined) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} is not an image file`);
+        return;
+      }
+
+      // Validate file size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Maximum size is 10MB`);
+        return;
+      }
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setBase64Images((prev) => [...prev, result]);
+        toast.success("Image added successfully");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    e.target.value = "";
+  };
+
+  const handleImageDelete = (index: number) => {
+    setBase64Images((prev) => prev.filter((_, i) => i !== index));
+    toast.success("Image removed");
   };
 
   return (
@@ -61,7 +140,9 @@ const AddApartment = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">Add New Apartment</CardTitle>
-            <p className="text-muted-foreground">Fill in the details to create a new listing</p>
+            <p className="text-muted-foreground">
+              Fill in the details to create a new listing
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -94,7 +175,7 @@ const AddApartment = () => {
                     id="price"
                     type="number"
                     required
-                    placeholder="2500"
+                    placeholder="e.g.,2500"
                     value={formData.price}
                     onChange={(e) => handleChange("price", e.target.value)}
                   />
@@ -106,21 +187,33 @@ const AddApartment = () => {
                     id="area"
                     type="number"
                     required
-                    placeholder="1200"
+                    placeholder="e.g., 1200"
                     value={formData.area}
                     onChange={(e) => handleChange("area", e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="floor">Floor *</Label>
+                  <Input
+                    id="floor"
+                    type="number"
+                    required
+                    placeholder="e.g., 5"
+                    value={formData.floor}
+                    onChange={(e) => handleChange("floor", e.target.value)}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="bedrooms">Bedrooms *</Label>
                   <Input
                     id="bedrooms"
                     type="number"
                     required
-                    placeholder="2"
+                    placeholder="e.g., 2"
                     value={formData.bedrooms}
                     onChange={(e) => handleChange("bedrooms", e.target.value)}
                   />
@@ -133,7 +226,7 @@ const AddApartment = () => {
                     type="number"
                     step="0.5"
                     required
-                    placeholder="2"
+                    placeholder="e.g., 2"
                     value={formData.bathrooms}
                     onChange={(e) => handleChange("bathrooms", e.target.value)}
                   />
@@ -170,18 +263,24 @@ const AddApartment = () => {
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !formData.date && "text-muted-foreground"
+                        !formData.availableFrom && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.date ? format(formData.date, "PPP") : <span>Pick a date</span>}
+                      {formData.availableFrom ? (
+                        format(formData.availableFrom, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.date}
-                      onSelect={(date) => handleChange("date", date)}
+                      selected={formData.availableFrom}
+                      onSelect={(availableFrom) =>
+                        handleChange("availableFrom", availableFrom)
+                      }
                       initialFocus
                       className="pointer-events-auto"
                     />
@@ -190,8 +289,19 @@ const AddApartment = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Images</Label>
-                <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                <Label>Images *</Label>
+                <input
+                  type="file"
+                  id="image-upload"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer block"
+                >
                   <Upload className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
                     Click to upload images or drag and drop
@@ -199,15 +309,36 @@ const AddApartment = () => {
                   <p className="text-xs text-muted-foreground mt-1">
                     PNG, JPG up to 10MB
                   </p>
-                </div>
+                </label>
+
+                {base64Images.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                    {base64Images.map((image, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={image}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleImageDelete(index)}
+                          className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1" size="lg">
-                  Create Listing
+                <Button type="submit" className="flex-1" size="lg" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create Listing"}
                 </Button>
                 <Link to="/" className="flex-1">
-                  <Button type="button" variant="outline" className="w-full" size="lg">
+                  <Button type="button" variant="outline" className="w-full" size="lg" disabled={isSubmitting}>
                     Cancel
                   </Button>
                 </Link>

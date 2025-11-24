@@ -1,28 +1,75 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ApartmentCard } from "@/components/ApartmentCard";
 import { FilterSection, FilterState } from "@/components/FilterSection";
 import { mockApartments } from "@/data/apartments";
+import axios from "axios";
+import { Apartment } from "@/types/apartment";
+import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 
 const Index = () => {
-  const [filters, setFilters] = useState<FilterState>({
-    bedrooms: "all",
-    address: "",
-    date: undefined,
-    maxPrice: ""
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    bedrooms: searchParams.get("bedrooms") || "all",
+    address: searchParams.get("address") || "",
+    date: searchParams.get("date")
+      ? new Date(searchParams.get("date")!)
+      : undefined,
+    maxPrice: searchParams.get("maxPrice") || "",
+  }));
+
+  const [apartments, setApartments] = useState<Apartment[]>([]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.bedrooms !== "all") params.set("bedrooms", filters.bedrooms);
+    if (filters.address) params.set("address", filters.address);
+    if (filters.date) params.set("date", filters.date.toISOString());
+    if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+    setSearchParams(params, { replace: true });
+
+    const fetchApartments = async () => {
+      setIsFiltering(true);
+      try {
+        const response = await axios.get<Apartment[]>(
+          "https://localhost:7147/api/apartment",
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        setApartments(response.data);
+      } catch (err) {
+        toast.error(err.message);
+      } finally {
+        setIsFiltering(false);
+      }
+    };
+
+    fetchApartments();
+  }, [filters, setSearchParams]);
 
   const filteredApartments = useMemo(() => {
-    return mockApartments.filter(apartment => {
+    // return mockApartments.filter(apartment => {
+    return apartments.filter((apartment) => {
       // Filter by bedrooms
       if (filters.bedrooms !== "all") {
         const bedroomCount = parseInt(filters.bedrooms);
         if (bedroomCount === 3 && apartment.bedrooms < 3) return false;
-        if (bedroomCount !== 3 && apartment.bedrooms !== bedroomCount) return false;
+        if (bedroomCount !== 3 && apartment.bedrooms !== bedroomCount)
+          return false;
       }
 
       // Filter by address
-      if (filters.address && !apartment.address.toLowerCase().includes(filters.address.toLowerCase())) {
+      if (
+        filters.address &&
+        !apartment.address.toLowerCase().includes(filters.address.toLowerCase())
+      ) {
         return false;
       }
 
@@ -38,7 +85,7 @@ const Index = () => {
 
       return true;
     });
-  }, [filters]);
+  }, [filters, apartments]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,28 +97,42 @@ const Index = () => {
             Browse through {mockApartments.length} available apartments
           </p>
         </div>
-        
+
         <div className="grid lg:grid-cols-4 gap-6">
           <aside className="lg:col-span-1">
-            <FilterSection onFilterChange={setFilters} />
+            <FilterSection onFilterChange={setFilters} filtersProps={filters} />
           </aside>
-          
+
           <main className="lg:col-span-3">
-            {filteredApartments.length > 0 ? (
+            {isFiltering ? (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-96 bg-muted animate-pulse rounded-lg"
+                  />
+                ))}
+              </div>
+            ) : filteredApartments.length > 0 ? (
               <>
                 <p className="text-muted-foreground mb-4">
-                  Showing {filteredApartments.length} {filteredApartments.length === 1 ? 'apartment' : 'apartments'}
+                  Showing {filteredApartments.length}{" "}
+                  {filteredApartments.length === 1 ? "apartment" : "apartments"}
                 </p>
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredApartments.map(apartment => (
+                  {filteredApartments.map((apartment) => (
                     <ApartmentCard key={apartment.id} apartment={apartment} />
                   ))}
                 </div>
               </>
             ) : (
               <div className="text-center py-12">
-                <p className="text-xl text-muted-foreground">No apartments match your filters</p>
-                <p className="text-sm text-muted-foreground mt-2">Try adjusting your search criteria</p>
+                <p className="text-xl text-muted-foreground">
+                  No apartments match your filters
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Try adjusting your search criteria
+                </p>
               </div>
             )}
           </main>

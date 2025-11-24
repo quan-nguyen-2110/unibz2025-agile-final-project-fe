@@ -6,8 +6,11 @@ export interface Apartment {
   bedrooms: number;
   bathrooms: number;
   area: number;
+  floor: number;
   description: string;
-  images: string[];
+  base64Images: string[];
   availableFrom: Date;
   amenities: string[];
+
+  code?: string;
 }

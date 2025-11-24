@@ -13,8 +13,9 @@ export const mockApartments: Apartment[] = [
     bedrooms: 2,
     bathrooms: 2,
     area: 1200,
+    floor: 5,
     description: "Beautiful modern loft in the heart of downtown with stunning city views. Features high ceilings, hardwood floors, and floor-to-ceiling windows.",
-    images: [apartment1, apartment2, apartment3, apartment4],
+    base64Images: [apartment1, apartment2, apartment3, apartment4],
     availableFrom: new Date("2024-03-01"),
     amenities: ["Parking", "Gym", "Pool", "Balcony", "Pet Friendly"]
   },
@@ -26,8 +27,9 @@ export const mockApartments: Apartment[] = [
     bedrooms: 1,
     bathrooms: 1,
     area: 650,
+    floor: 3,
     description: "Charming studio apartment perfect for singles or couples. Recently renovated with modern appliances and finishes.",
-    images: [apartment2, apartment1, apartment3],
+    base64Images: [apartment2, apartment1, apartment3],
     availableFrom: new Date("2024-02-15"),
     amenities: ["Laundry", "Air Conditioning", "Storage"]
   },
@@ -39,8 +41,9 @@ export const mockApartments: Apartment[] = [
     bedrooms: 3,
     bathrooms: 2.5,
     area: 1800,
+    floor: 1,
     description: "Perfect family home with spacious rooms and a large backyard. Close to schools and parks.",
-    images: [apartment3, apartment4, apartment1],
+    base64Images: [apartment3, apartment4, apartment1],
     availableFrom: new Date("2024-04-01"),
     amenities: ["Garden", "Garage", "Fireplace", "Pet Friendly"]
   },
@@ -52,8 +55,9 @@ export const mockApartments: Apartment[] = [
     bedrooms: 3,
     bathrooms: 3,
     area: 2500,
+    floor: 25,
     description: "Stunning penthouse with panoramic city views. Features top-of-the-line finishes, private terrace, and concierge service.",
-    images: [apartment4, apartment2, apartment1, apartment3],
+    base64Images: [apartment4, apartment2, apartment1, apartment3],
     availableFrom: new Date("2024-03-15"),
     amenities: ["Concierge", "Pool", "Gym", "Parking", "Balcony", "Security"]
   },
@@ -65,8 +69,9 @@ export const mockApartments: Apartment[] = [
     bedrooms: 1,
     bathrooms: 1,
     area: 700,
+    floor: 2,
     description: "Artistic studio in vibrant neighborhood. High ceilings and natural light throughout.",
-    images: [apartment1, apartment3],
+    base64Images: [apartment1, apartment3],
     availableFrom: new Date("2024-02-20"),
     amenities: ["Air Conditioning", "Storage", "Pet Friendly"]
   },
@@ -78,8 +83,9 @@ export const mockApartments: Apartment[] = [
     bedrooms: 2,
     bathrooms: 2,
     area: 1100,
+    floor: 7,
     description: "Modern apartment with open floor plan and designer kitchen. Walking distance to shops and restaurants.",
-    images: [apartment2, apartment4, apartment3],
+    base64Images: [apartment2, apartment4, apartment3],
     availableFrom: new Date("2024-03-10"),
     amenities: ["Parking", "Gym", "Balcony", "Laundry"]
   }
