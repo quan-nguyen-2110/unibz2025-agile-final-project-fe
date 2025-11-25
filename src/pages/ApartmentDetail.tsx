@@ -68,6 +68,7 @@ const apartmentSchema = z.object({
     .number()
     .min(0, "Floor must be at least 0")
     .max(200, "Floor must be less than 200"),
+  availableFrom: z.date().nullable().optional(),
   description: z
     .string()
     .trim()
@@ -92,6 +93,7 @@ const ApartmentDetail = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [editData, setEditData] = useState({
     title: "",
     address: "",
@@ -107,6 +109,9 @@ const ApartmentDetail = () => {
   });
 
   useEffect(() => {
+    const userRole = localStorage.getItem("userRole");
+    setIsAdmin(userRole === "admin");
+
     if (!originalApartment) {
       const fetchApartment = async () => {
         setIsLoading(true);
@@ -183,7 +188,7 @@ const ApartmentDetail = () => {
       area: currentApartment.area.toString(),
       floor: currentApartment.floor.toString(),
       description: currentApartment.description,
-      amenities: currentApartment.amenities.join(", "),
+      amenities: currentApartment.amenities,
       availableFrom: currentApartment.availableFrom,
       base64Images: [...currentApartment.base64Images],
     });
@@ -212,6 +217,7 @@ const ApartmentDetail = () => {
         bathrooms: parseFloat(editData.bathrooms),
         area: parseInt(editData.area),
         floor: parseInt(editData.floor),
+        availableFrom: editData.availableFrom,
         description: editData.description,
         amenities: editData.amenities,
         base64Images: editData.base64Images,
@@ -230,12 +236,9 @@ const ApartmentDetail = () => {
         bathrooms: parseFloat(editData.bathrooms),
         area: parseInt(editData.area),
         floor: parseInt(editData.floor),
+        availableFrom: editData.availableFrom,
         description: editData.description,
-        amenities: editData.amenities
-          .split(",")
-          .map((a) => a.trim())
-          .filter((a) => a),
-        availableFrom: editData.availableFrom || currentApartment.availableFrom,
+        amenities: editData.amenities,
         base64Images: [...editData.base64Images],
       };
 
@@ -268,19 +271,19 @@ const ApartmentDetail = () => {
 
     const fileArray = Array.from(files);
     const validFiles: File[] = [];
-    
+
     // Validate all files
     for (const file of fileArray) {
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast.error(`${file.name} is not an image file`);
         continue;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
         toast.error(`${file.name} is larger than 5MB`);
         continue;
       }
-      
+
       validFiles.push(file);
     }
 
@@ -295,14 +298,18 @@ const ApartmentDetail = () => {
       reader.onloadend = () => {
         newImages.push(reader.result as string);
         loadedCount++;
-        
+
         // Once all files are loaded, update state
         if (loadedCount === validFiles.length) {
-          setEditData(prev => ({
+          setEditData((prev) => ({
             ...prev,
-            base64Images: [...prev.base64Images, ...newImages]
+            base64Images: [...prev.base64Images, ...newImages],
           }));
-          toast.success(`${validFiles.length} image${validFiles.length > 1 ? 's' : ''} added successfully`);
+          toast.success(
+            `${validFiles.length} image${
+              validFiles.length > 1 ? "s" : ""
+            } added successfully`
+          );
         }
       };
       reader.readAsDataURL(file);
@@ -310,9 +317,9 @@ const ApartmentDetail = () => {
   };
 
   const handleImageDelete = (index: number) => {
-    setEditData(prev => ({
+    setEditData((prev) => ({
       ...prev,
-      base64Images: prev.base64Images.filter((_, i) => i !== index)
+      base64Images: prev.base64Images.filter((_, i) => i !== index),
     }));
     // Reset selected image if it was deleted
     if (selectedImage === index) {
@@ -320,7 +327,7 @@ const ApartmentDetail = () => {
     } else if (selectedImage > index) {
       setSelectedImage(selectedImage - 1);
     }
-    toast.success('Image removed');
+    toast.success("Image removed");
   };
 
   return (
@@ -335,32 +342,33 @@ const ApartmentDetail = () => {
             </Button>
           </Link>
 
-          {!isEditMode ? (
-            <Button onClick={handleEdit} className="gap-2">
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSave}
-                className="gap-2"
-                disabled={isSaving}
-              >
-                <Save className="h-4 w-4" />
-                {isSaving ? "Saving..." : "Save"}
+          {isAdmin &&
+            (!isEditMode ? (
+              <Button onClick={handleEdit} className="gap-2">
+                <Edit className="h-4 w-4" />
+                Edit
               </Button>
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                className="gap-2"
-                disabled={isSaving}
-              >
-                <X className="h-4 w-4" />
-                Cancel
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSave}
+                  className="gap-2"
+                  disabled={isSaving}
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isSaving}
+                >
+                  <X className="h-4 w-4" />
+                  Cancel
+                </Button>
+              </div>
+            ))}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -387,11 +395,13 @@ const ApartmentDetail = () => {
                     onClick={() => setSelectedImage(index)}
                     className={cn(
                       "rounded-lg overflow-hidden border-2 transition-all",
-                      selectedImage === index ? "border-primary shadow-md" : "border-transparent hover:border-muted"
+                      selectedImage === index
+                        ? "border-primary shadow-md"
+                        : "border-transparent hover:border-muted"
                     )}
                   >
-                    <img 
-                      src={image} 
+                    <img
+                      src={image}
                       alt={`View ${index + 1}`}
                       className="w-full h-20 object-cover"
                     />
@@ -403,7 +413,13 @@ const ApartmentDetail = () => {
                 <div className="flex items-center justify-between mb-3">
                   <Label className="text-lg font-semibold">Images</Label>
                   <label htmlFor="image-upload">
-                    <Button type="button" variant="outline" size="sm" className="gap-2" asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      asChild
+                    >
                       <span>
                         <Upload className="h-4 w-4" />
                         Add Image(s)
@@ -425,7 +441,9 @@ const ApartmentDetail = () => {
                       key={index}
                       className={cn(
                         "relative rounded-lg overflow-hidden border-2 transition-all group",
-                        selectedImage === index ? "border-primary shadow-md" : "border-transparent hover:border-muted"
+                        selectedImage === index
+                          ? "border-primary shadow-md"
+                          : "border-transparent hover:border-muted"
                       )}
                     >
                       <button
@@ -433,8 +451,8 @@ const ApartmentDetail = () => {
                         onClick={() => setSelectedImage(index)}
                         className="w-full"
                       >
-                        <img 
-                          src={image} 
+                        <img
+                          src={image}
                           alt={`View ${index + 1}`}
                           className="w-full h-20 object-cover"
                         />
@@ -450,7 +468,9 @@ const ApartmentDetail = () => {
                   ))}
                   {editData.base64Images.length === 0 && (
                     <div className="col-span-4 text-center py-8 border-2 border-dashed rounded-lg">
-                      <p className="text-muted-foreground text-sm">No images yet. Add some to get started.</p>
+                      <p className="text-muted-foreground text-sm">
+                        No images yet. Add some to get started.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -487,12 +507,16 @@ const ApartmentDetail = () => {
                 <h2 className="text-2xl font-bold mb-4">Amenities</h2>
                 {!isEditMode ? (
                   <div className="grid grid-cols-2 gap-3">
-                    {currentApartment.amenities.map((amenity, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Check className="h-5 w-5 text-primary" />
-                        <span>{amenity}</span>
-                      </div>
-                    ))}
+                    {currentApartment.amenities
+                      .split(",")
+                      .map((a) => a.trim())
+                      .filter((a) => a)
+                      .map((amenity, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Check className="h-5 w-5 text-primary" />
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -612,10 +636,12 @@ const ApartmentDetail = () => {
                         <span className="text-muted-foreground">Available</span>
                         <div className="flex items-center gap-1 font-semibold">
                           <Calendar className="h-4 w-4" />
-                          {format(
-                            currentApartment.availableFrom,
-                            "MMM dd, yyyy"
-                          )}
+                          {currentApartment.availableFrom
+                            ? format(
+                                currentApartment.availableFrom,
+                                "MMM dd, yyyy"
+                              )
+                            : "Not Available"}
                         </div>
                       </div>
                     </>
@@ -668,6 +694,9 @@ const ApartmentDetail = () => {
                       </div>
                       <div>
                         <Label>Available From</Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Leave empty to mark as not available
+                        </p>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -682,7 +711,7 @@ const ApartmentDetail = () => {
                               {editData.availableFrom ? (
                                 format(editData.availableFrom, "PPP")
                               ) : (
-                                <span>Pick a date</span>
+                                <span>Not available</span>
                               )}
                             </Button>
                           </PopoverTrigger>
@@ -698,6 +727,19 @@ const ApartmentDetail = () => {
                             />
                           </PopoverContent>
                         </Popover>
+                        {editData.availableFrom && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleEditChange("availableFrom", null)
+                            }
+                            className="mt-1"
+                          >
+                            Clear date
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}

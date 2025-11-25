@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,12 @@ import {
 import { CalendarIcon, ArrowLeft, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import axios from "axios";
 
 const AddApartment = () => {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const API_URL =
     (import.meta.env.VITE_API_URL || "https://localhost:7147") +
@@ -41,6 +42,14 @@ const AddApartment = () => {
   });
 
   const [base64Images, setBase64Images] = useState<string[]>([]);
+
+  useEffect(() => {
+    const userRole = localStorage.getItem("userRole");
+    if (userRole !== "admin") {
+      toast.error("Only admin users can add apartments");
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,7 +265,10 @@ const AddApartment = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Available From *</Label>
+                <Label>Available From</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Leave empty to mark as not available
+                </p>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -270,7 +282,7 @@ const AddApartment = () => {
                       {formData.availableFrom ? (
                         format(formData.availableFrom, "PPP")
                       ) : (
-                        <span>Pick a date</span>
+                        <span>Not available</span>
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -278,14 +290,23 @@ const AddApartment = () => {
                     <Calendar
                       mode="single"
                       selected={formData.availableFrom}
-                      onSelect={(availableFrom) =>
-                        handleChange("availableFrom", availableFrom)
-                      }
+                      onSelect={(date) => handleChange("availableFrom", date)}
                       initialFocus
                       className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
+                {formData.availableFrom && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleChange("availableFrom", undefined)}
+                    className="mt-1"
+                  >
+                    Clear date
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -334,11 +355,22 @@ const AddApartment = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1" size="lg" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  size="lg"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Creating..." : "Create Listing"}
                 </Button>
                 <Link to="/" className="flex-1">
-                  <Button type="button" variant="outline" className="w-full" size="lg" disabled={isSubmitting}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                    disabled={isSubmitting}
+                  >
                     Cancel
                   </Button>
                 </Link>

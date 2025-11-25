@@ -1,3 +1,7 @@
+# How to run: npm run dev
+# How to debug: select Run Vite + Launch Browser
+
+
 # Welcome to your Lovable project
 
 ## Project info

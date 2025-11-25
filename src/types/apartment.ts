@@ -9,8 +9,8 @@ export interface Apartment {
   floor: number;
   description: string;
   base64Images: string[];
-  availableFrom: Date;
-  amenities: string[];
+  availableFrom?: Date;
+  amenities: string;
 
   code?: string;
 }
