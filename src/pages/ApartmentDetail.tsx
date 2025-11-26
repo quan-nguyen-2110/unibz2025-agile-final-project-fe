@@ -21,6 +21,7 @@ import {
   Upload,
   Trash2,
   Building2,
+  CalendarDays,
 } from "lucide-react";
 import {
   Popover,
@@ -35,6 +36,15 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { Apartment } from "@/types/apartment";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const apartmentSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -87,7 +97,7 @@ const ApartmentDetail = () => {
 
   const { id } = useParams();
   const location = useLocation();
-  let originalApartment = location.state?.apartment;
+  const originalApartment = location.state?.apartment;
   const [currentApartment, setCurrentApartment] = useState(originalApartment);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -107,6 +117,10 @@ const ApartmentDetail = () => {
     availableFrom: undefined as Date | undefined,
     base64Images: [] as string[],
   });
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [guests, setGuests] = useState(1);
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole");
@@ -125,7 +139,7 @@ const ApartmentDetail = () => {
             }
           );
 
-          originalApartment = response.data;
+          setCurrentApartment(response.data);
         } catch (err) {
           toast.error(err.message);
         } finally {
@@ -135,7 +149,7 @@ const ApartmentDetail = () => {
 
       fetchApartment();
     }
-  }, [id]);
+  }, [id, originalApartment]);
 
   if (isLoading) {
     return (
@@ -197,6 +211,61 @@ const ApartmentDetail = () => {
 
   const handleCancel = () => {
     setIsEditMode(false);
+  };
+
+  const handleBooking = () => {
+    if (!checkIn || !checkOut) {
+      toast.error("Please select check-in and check-out dates.");
+      return;
+    }
+
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (checkOutDate <= checkInDate) {
+      toast.error("Check-out date must be after check-in date.");
+      return;
+    }
+
+    const nights = Math.ceil(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const totalPrice = currentApartment.price * nights;
+
+    const booking = {
+      id: Date.now().toString(),
+      apartmentId: currentApartment.id,
+      apartmentTitle: currentApartment.title,
+      apartmentImage: currentApartment.base64Images[0],
+      apartmentAddress: currentApartment.address,
+      apartmentPrice: currentApartment.price,
+      checkIn,
+      checkOut,
+      guests,
+      nights,
+      totalPrice,
+      status: "pending" as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    const existingBookings = JSON.parse(
+      localStorage.getItem("bookings") || "[]"
+    );
+    localStorage.setItem(
+      "bookings",
+      JSON.stringify([...existingBookings, booking])
+    );
+
+    toast.success(
+      `Your booking for ${nights} night${
+        nights > 1 ? "s" : ""
+      } has been submitted. Total: $${totalPrice.toLocaleString()}`
+    );
+
+    setBookingDialogOpen(false);
+    setCheckIn("");
+    setCheckOut("");
+    setGuests(1);
   };
 
   const handleSave = async () => {
@@ -429,7 +498,7 @@ const ApartmentDetail = () => {
                   <input
                     id="image-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg, image/webp, image/jpg" // Restrict to common, small image types
                     multiple
                     className="hidden"
                     onChange={handleImageUpload}
@@ -746,13 +815,81 @@ const ApartmentDetail = () => {
                 </div>
 
                 {!isEditMode && (
-                  <Button
-                    onClick={handleContact}
-                    className="w-full mt-6"
-                    size="lg"
-                  >
-                    Contact Owner
-                  </Button>
+                  <div className="space-y-3 mt-6">
+                    {isAdmin === false && (
+                      <Dialog
+                        open={bookingDialogOpen}
+                        onOpenChange={setBookingDialogOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button size="lg" className="w-full">
+                            <CalendarDays className="h-5 w-5 mr-2" />
+                            Book Now
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>
+                              Book {currentApartment.title}
+                            </DialogTitle>
+                            <DialogDescription>
+                              ${currentApartment.price.toLocaleString()}/month
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="checkIn">Check-in Date</Label>
+                              <Input
+                                id="checkIn"
+                                type="date"
+                                value={checkIn}
+                                onChange={(e) => setCheckIn(e.target.value)}
+                                min={new Date().toISOString().split("T")[0]}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="checkOut">Check-out Date</Label>
+                              <Input
+                                id="checkOut"
+                                type="date"
+                                value={checkOut}
+                                onChange={(e) => setCheckOut(e.target.value)}
+                                min={
+                                  checkIn ||
+                                  new Date().toISOString().split("T")[0]
+                                }
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="guests">Number of Guests</Label>
+                              <Input
+                                id="guests"
+                                type="number"
+                                min="1"
+                                value={guests}
+                                onChange={(e) =>
+                                  setGuests(parseInt(e.target.value) || 1)
+                                }
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button type="submit" onClick={handleBooking}>
+                              Confirm Booking
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    <Button
+                      onClick={handleContact}
+                      variant={isAdmin === false ? "outline" : "default"}
+                      className="w-full"
+                      size="lg"
+                    >
+                      Contact Owner
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>

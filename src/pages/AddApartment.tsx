@@ -314,7 +314,7 @@ const AddApartment = () => {
                 <input
                   type="file"
                   id="image-upload"
-                  accept="image/*"
+                  accept="image/jpeg, image/webp, image/jpg" // Restrict to common, small image types
                   multiple
                   onChange={handleImageUpload}
                   className="hidden"

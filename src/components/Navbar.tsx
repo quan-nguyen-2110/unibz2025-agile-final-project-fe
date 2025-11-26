@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, PlusCircle, User, LogIn } from "lucide-react";
+import { Home, PlusCircle, User, LogIn, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
 
 export const Navbar = () => {
@@ -24,13 +24,29 @@ export const Navbar = () => {
               <Link to="/">
                 <Button variant="ghost">Browse</Button>
               </Link>
-              {userRole === "admin" && (
-                <Link to="/add">
-                  <Button variant="default" className="gap-2">
-                    <PlusCircle className="h-4 w-4" />
-                    Add Apartment
+              {isLoggedIn && userRole === "user" && (
+                <Link to="/bookings">
+                  <Button variant="ghost" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    My Bookings
                   </Button>
                 </Link>
+              )}
+              {userRole === "admin" && (
+                <>
+                  <Link to="/add">
+                    <Button variant="default" className="gap-2">
+                      <PlusCircle className="h-4 w-4" />
+                      Add Apartment
+                    </Button>
+                  </Link>
+                  <Link to="/admin/bookings">
+                    <Button variant="ghost" className="gap-2">
+                      <Calendar className="h-4 w-4" />
+                      All Bookings
+                    </Button>
+                  </Link>
+                </>
               )}
               {isLoggedIn ? (
                 <Link to="/profile">
