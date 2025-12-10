@@ -4,7 +4,14 @@ import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, Trash2, CalendarDays } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Trash2,
+  CalendarDays,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -27,27 +34,22 @@ import {
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 
-interface Booking {
-  id: string;
-  apartmentId: string;
-  apartmentTitle: string;
-  apartmentImage: string;
-  apartmentAddress: string;
-  apartmentPrice: number;
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  nights: number;
-  totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  createdAt: string;
-  cancelReason?: string;
-}
+import { Booking } from "@/types/booking";
+import axios from "axios";
 
 const Bookings = () => {
+  const API_APARTMENT_URL =
+    (import.meta.env.VITE_API_URL || "https://localhost:7147") +
+    "/api/Apartment";
+
+  const API_BOOKING_URL =
+    (import.meta.env.VITE_API_URL || "https://localhost:7221") +
+    "/api/Bookings";
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [newCheckIn, setNewCheckIn] = useState<Date>();
@@ -60,32 +62,74 @@ const Bookings = () => {
       return;
     }
 
-    const storedBookings = JSON.parse(localStorage.getItem("bookings") || "[]");
-    setBookings(storedBookings);
-  }, [isLoggedIn, navigate]);
+    const fetchBookings = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get<Booking[]>(
+          "https://localhost:7221/api/bookings/",
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-  const handleCancelBooking = (bookingId: string) => {
-    const updatedBookings = bookings.map(booking =>
-      booking.id === bookingId ? { ...booking, status: 'cancelled' as const } : booking
-    );
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    
-    toast({
-      title: "Booking Cancelled",
-      description: "Your booking has been cancelled successfully.",
-    });
+        setBookings(response.data);
+      } catch (err) {
+        toast({
+          title: "Getting Bookings Failed",
+          description: err.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [isLoggedIn, navigate, toast]);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    // localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_BOOKING_URL}/{${bookingId}}/cancel`
+      );
+      console.log("Success:", response.data);
+      const updatedBookings = bookings.map((booking) =>
+        booking.id === bookingId
+          ? { ...booking, status: "cancelled" as const }
+          : booking
+      );
+      setBookings(updatedBookings);
+
+      toast({
+        title: "Booking Cancelled",
+        description: "Your booking has been cancelled successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Cancelling Booking Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteBooking = (bookingId: string) => {
-    const updatedBookings = bookings.filter(booking => booking.id !== bookingId);
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    
-    toast({
-      title: "Booking Deleted",
-      description: "The booking has been removed from your list.",
-    });
+    // const updatedBookings = bookings.filter(
+    //   (booking) => booking.id !== bookingId
+    // );
+    // setBookings(updatedBookings);
+    // localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+    // toast({
+    //   title: "Booking Deleted",
+    //   description: "The booking has been removed from your list.",
+    // });
   };
 
   const openRescheduleDialog = (booking: Booking) => {
@@ -95,7 +139,7 @@ const Bookings = () => {
     setRescheduleDialogOpen(true);
   };
 
-  const handleReschedule = () => {
+  const handleReschedule = async () => {
     if (!selectedBooking || !newCheckIn || !newCheckOut) return;
 
     if (newCheckOut <= newCheckIn) {
@@ -107,47 +151,70 @@ const Bookings = () => {
       return;
     }
 
-    const nights = Math.ceil((newCheckOut.getTime() - newCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+    const nights = Math.ceil(
+      (newCheckOut.getTime() - newCheckIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const totalPrice = selectedBooking.apartmentPrice * nights;
 
-    const updatedBookings = bookings.map(booking =>
-      booking.id === selectedBooking.id
-        ? {
-            ...booking,
-            checkIn: newCheckIn.toISOString(),
-            checkOut: newCheckOut.toISOString(),
-            nights,
-            totalPrice,
-          }
-        : booking
-    );
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_BOOKING_URL}/${selectedBooking.id}/reschedule`,
+        {
+          checkIn: newCheckIn.toISOString().split("T")[0],
+          checkOut: newCheckOut.toISOString().split("T")[0],
+          totalPrice,
+        }
+      );
+      console.log("Success:", response.data);
 
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    setRescheduleDialogOpen(false);
-    
-    toast({
-      title: "Booking Rescheduled",
-      description: "Your booking dates have been updated successfully.",
-    });
+      const updatedBookings = bookings.map((booking) =>
+        booking.id === selectedBooking.id
+          ? {
+              ...booking,
+              checkIn: newCheckIn.toISOString(),
+              checkOut: newCheckOut.toISOString(),
+              nights,
+              totalPrice,
+            }
+          : booking
+      );
+
+      setBookings(updatedBookings);
+      // localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      setRescheduleDialogOpen(false);
+
+      toast({
+        title: "Booking Rescheduled",
+        description: "Your booking dates have been updated successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Rescheduling Booking Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case "confirmed":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       default:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
     }
   };
 
@@ -157,15 +224,24 @@ const Bookings = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">My Bookings</h1>
-          <p className="text-muted-foreground">Manage all your apartment bookings</p>
+          <p className="text-muted-foreground">
+            Manage all your apartment bookings
+          </p>
         </div>
 
-        {bookings.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+            <p className="text-muted-foreground">Loading your bookings...</p>
+          </div>
+        ) : bookings.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">No bookings yet</h3>
-              <p className="text-muted-foreground mb-6">Start exploring apartments and make your first booking!</p>
+              <p className="text-muted-foreground mb-6">
+                Start exploring apartments and make your first booking!
+              </p>
               <Button onClick={() => navigate("/")}>Browse Apartments</Button>
             </CardContent>
           </Card>
@@ -179,15 +255,19 @@ const Bookings = () => {
                       src={booking.apartmentImage}
                       alt={booking.apartmentTitle}
                       className="w-full h-64 md:h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => navigate(`/apartment/${booking.apartmentId}`)}
+                      onClick={() =>
+                        navigate(`/apartment/${booking.apartmentId}`)
+                      }
                     />
                   </div>
                   <div className="md:w-2/3 p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 
+                        <h3
                           className="text-2xl font-bold mb-2 cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => navigate(`/apartment/${booking.apartmentId}`)}
+                          onClick={() =>
+                            navigate(`/apartment/${booking.apartmentId}`)
+                          }
                         >
                           {booking.apartmentTitle}
                         </h3>
@@ -197,7 +277,8 @@ const Bookings = () => {
                         </div>
                       </div>
                       <Badge className={getStatusColor(booking.status)}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                        {booking.status.charAt(0).toUpperCase() +
+                          booking.status.slice(1)}
                       </Badge>
                     </div>
 
@@ -205,21 +286,31 @@ const Bookings = () => {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Check-in</p>
-                          <p className="font-semibold">{formatDate(booking.checkIn)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Check-in
+                          </p>
+                          <p className="font-semibold">
+                            {formatDate(booking.checkIn)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Check-out</p>
-                          <p className="font-semibold">{formatDate(booking.checkOut)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Check-out
+                          </p>
+                          <p className="font-semibold">
+                            {formatDate(booking.checkOut)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Guests</p>
+                          <p className="text-sm text-muted-foreground">
+                            Guests
+                          </p>
                           <p className="font-semibold">{booking.guests}</p>
                         </div>
                       </div>
@@ -227,46 +318,61 @@ const Bookings = () => {
 
                     {booking.cancelReason && (
                       <div className="mb-4 p-3 bg-muted rounded-lg">
-                        <p className="text-sm font-semibold text-muted-foreground mb-1">Cancellation Reason:</p>
+                        <p className="text-sm font-semibold text-muted-foreground mb-1">
+                          Cancellation Reason:
+                        </p>
                         <p className="text-sm">{booking.cancelReason}</p>
                       </div>
                     )}
 
                     <div className="border-t pt-4 flex justify-between items-center">
                       <div>
-                        <p className="text-sm text-muted-foreground">Total Cost</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Cost
+                        </p>
                         <p className="text-2xl font-bold text-primary">
                           ${booking.totalPrice.toLocaleString()}
                           <span className="text-sm text-muted-foreground ml-2">
-                            ({booking.nights} night{booking.nights > 1 ? 's' : ''})
+                            ({booking.nights} night
+                            {booking.nights > 1 ? "s" : ""})
                           </span>
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        {booking.status !== 'cancelled' && (
-                          <Button 
-                            variant="outline" 
+                        {booking.status !== "cancelled" && (
+                          <Button
+                            variant="outline"
                             onClick={() => openRescheduleDialog(booking)}
                           >
                             <CalendarDays className="h-4 w-4 mr-2" />
                             Reschedule
                           </Button>
                         )}
-                        {booking.status === 'pending' && (
+                        {(booking.status === "pending" || booking.status === "confirmed")&& (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="outline">Cancel Booking</Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Cancel this booking?
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will cancel your booking for {booking.apartmentTitle}. This action cannot be undone.
+                                  This will cancel your booking for{" "}
+                                  {booking.apartmentTitle}. This action cannot
+                                  be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleCancelBooking(booking.id)}>
+                                <AlertDialogCancel>
+                                  Keep Booking
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleCancelBooking(booking.id)
+                                  }
+                                >
                                   Cancel Booking
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -281,14 +387,19 @@ const Bookings = () => {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this booking?</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Delete this booking?
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete this booking record. This action cannot be undone.
+                                This will permanently delete this booking
+                                record. This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Keep</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteBooking(booking.id)}>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteBooking(booking.id)}
+                              >
                                 Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -303,12 +414,16 @@ const Bookings = () => {
           </div>
         )}
 
-        <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+        <Dialog
+          open={rescheduleDialogOpen}
+          onOpenChange={setRescheduleDialogOpen}
+        >
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Reschedule Booking</DialogTitle>
               <DialogDescription>
-                Change your check-in and check-out dates for {selectedBooking?.apartmentTitle}
+                Change your check-in and check-out dates for{" "}
+                {selectedBooking?.apartmentTitle}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-6 py-4">
@@ -318,7 +433,10 @@ const Bookings = () => {
                   <CalendarComponent
                     mode="single"
                     selected={newCheckIn}
-                    onSelect={setNewCheckIn}
+                    onSelect={(value) => {
+                      console.log(value);
+                      setNewCheckIn(value);
+                    }}
                     disabled={(date) => date < new Date()}
                     className="rounded-md border"
                   />
@@ -340,12 +458,23 @@ const Bookings = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">New Total</p>
                       <p className="text-2xl font-bold">
-                        ${(selectedBooking.apartmentPrice * Math.ceil((newCheckOut.getTime() - newCheckIn.getTime()) / (1000 * 60 * 60 * 24))).toLocaleString()}
+                        $
+                        {(
+                          selectedBooking.apartmentPrice *
+                          Math.ceil(
+                            (newCheckOut.getTime() - newCheckIn.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          )
+                        ).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">
-                        {Math.ceil((newCheckOut.getTime() - newCheckIn.getTime()) / (1000 * 60 * 60 * 24))} nights
+                        {Math.ceil(
+                          (newCheckOut.getTime() - newCheckIn.getTime()) /
+                            (1000 * 60 * 60 * 24)
+                        )}{" "}
+                        nights
                       </p>
                       <p className="text-sm text-muted-foreground">
                         ${selectedBooking.apartmentPrice}/night
@@ -355,10 +484,16 @@ const Bookings = () => {
                 </div>
               )}
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setRescheduleDialogOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleReschedule} disabled={!newCheckIn || !newCheckOut}>
+                <Button
+                  onClick={handleReschedule}
+                  disabled={!newCheckIn || !newCheckOut}
+                >
                   Confirm Reschedule
                 </Button>
               </div>

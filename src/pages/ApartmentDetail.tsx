@@ -91,9 +91,13 @@ const apartmentSchema = z.object({
 });
 
 const ApartmentDetail = () => {
-  const API_URL =
+  const API_APARTMENT_URL =
     (import.meta.env.VITE_API_URL || "https://localhost:7147") +
     "/api/Apartment";
+
+  const API_BOOKING_URL =
+    (import.meta.env.VITE_API_URL || "https://localhost:7221") +
+    "/api/Bookings";
 
   const { id } = useParams();
   const location = useLocation();
@@ -213,7 +217,7 @@ const ApartmentDetail = () => {
     setIsEditMode(false);
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!checkIn || !checkOut) {
       toast.error("Please select check-in and check-out dates.");
       return;
@@ -233,39 +237,52 @@ const ApartmentDetail = () => {
     const totalPrice = currentApartment.price * nights;
 
     const booking = {
-      id: Date.now().toString(),
-      apartmentId: currentApartment.id,
-      apartmentTitle: currentApartment.title,
-      apartmentImage: currentApartment.base64Images[0],
-      apartmentAddress: currentApartment.address,
-      apartmentPrice: currentApartment.price,
-      checkIn,
-      checkOut,
-      guests,
-      nights,
-      totalPrice,
-      status: "pending" as const,
-      createdAt: new Date().toISOString(),
+      //id: Date.now().toString(),
+
+      // ApartmentId: currentApartment.id,
+      ApartmentId: 'a4df9355-ad30-4d69-6197-08de259cb0f6',
+
+      //apartmentTitle: currentApartment.title,
+      // apartmentImage: currentApartment.base64Images[0],
+      // apartmentAddress: currentApartment.address,
+      // apartmentPrice: currentApartment.price,
+      CheckIn: checkIn,
+      CheckOut: checkOut,
+      Guests: guests,
+      //nights,
+      TotalPrice: totalPrice,
+      //status: "pending" as const,
+      //createdAt: new Date().toISOString(),
     };
 
-    const existingBookings = JSON.parse(
-      localStorage.getItem("bookings") || "[]"
-    );
-    localStorage.setItem(
-      "bookings",
-      JSON.stringify([...existingBookings, booking])
-    );
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${API_BOOKING_URL}`, booking);
+      console.log("Success:", response.data);
 
-    toast.success(
-      `Your booking for ${nights} night${
-        nights > 1 ? "s" : ""
-      } has been submitted. Total: $${totalPrice.toLocaleString()}`
-    );
+      toast.success(
+        `Your booking for ${nights} night${
+          nights > 1 ? "s" : ""
+        } has been submitted. Total: $${totalPrice.toLocaleString()}`
+      );
 
-    setBookingDialogOpen(false);
-    setCheckIn("");
-    setCheckOut("");
-    setGuests(1);
+      setBookingDialogOpen(false);
+      setCheckIn("");
+      setCheckOut("");
+      setGuests(1);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+
+    // const existingBookings = JSON.parse(
+    //   localStorage.getItem("bookings") || "[]"
+    // );
+    // localStorage.setItem(
+    //   "bookings",
+    //   JSON.stringify([...existingBookings, booking])
+    // );
   };
 
   const handleSave = async () => {
@@ -293,7 +310,10 @@ const ApartmentDetail = () => {
       });
 
       setIsSaving(true);
-      const response = await axios.put(`${API_URL}/${id}`, validatedData);
+      const response = await axios.put(
+        `${API_APARTMENT_URL}/${id}`,
+        validatedData
+      );
 
       // Update the current apartment with the new data
       const updatedApartment = {
@@ -817,69 +837,124 @@ const ApartmentDetail = () => {
                 {!isEditMode && (
                   <div className="space-y-3 mt-6">
                     {isAdmin === false && (
-                      <Dialog
-                        open={bookingDialogOpen}
-                        onOpenChange={setBookingDialogOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <Button size="lg" className="w-full">
+                      <>
+                        {currentApartment.availableFrom !== null ? (
+                          <Dialog
+                            open={bookingDialogOpen}
+                            onOpenChange={setBookingDialogOpen}
+                          >
+                            <DialogTrigger asChild>
+                              <Button size="lg" className="w-full">
+                                <CalendarDays className="h-5 w-5 mr-2" />
+                                Book Now
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  Book {currentApartment.title}
+                                </DialogTitle>
+                                <DialogDescription>
+                                  ${currentApartment.price.toLocaleString()}
+                                  /month
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="checkIn">Check-in Date</Label>
+                                  <Input
+                                    id="checkIn"
+                                    type="date"
+                                    value={checkIn}
+                                    onChange={(e) => setCheckIn(e.target.value)}
+                                    min={(() => {
+                                      const today = new Date();
+                                      const availableDate =
+                                        currentApartment.availableFrom
+                                          ? new Date(
+                                              currentApartment.availableFrom
+                                            )
+                                          : today;
+                                      const minDate =
+                                        today > availableDate
+                                          ? today
+                                          : availableDate;
+                                      return minDate
+                                        .toISOString()
+                                        .split("T")[0];
+                                    })()}
+                                  />
+                                  {currentApartment.availableFrom && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Available from{" "}
+                                      {format(
+                                        currentApartment.availableFrom,
+                                        "MMM dd, yyyy"
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="checkOut">
+                                    Check-out Date
+                                  </Label>
+                                  <Input
+                                    id="checkOut"
+                                    type="date"
+                                    value={checkOut}
+                                    onChange={(e) =>
+                                      setCheckOut(e.target.value)
+                                    }
+                                    min={
+                                      checkIn ||
+                                      (() => {
+                                        const today = new Date();
+                                        const availableDate =
+                                          currentApartment.availableFrom
+                                            ? new Date(
+                                                currentApartment.availableFrom
+                                              )
+                                            : today;
+                                        const minDate =
+                                          today > availableDate
+                                            ? today
+                                            : availableDate;
+                                        return minDate
+                                          .toISOString()
+                                          .split("T")[0];
+                                      })()
+                                    }
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="guests">
+                                    Number of Guests
+                                  </Label>
+                                  <Input
+                                    id="guests"
+                                    type="number"
+                                    min="1"
+                                    value={guests}
+                                    onChange={(e) =>
+                                      setGuests(parseInt(e.target.value) || 1)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button type="submit" onClick={handleBooking}>
+                                  Confirm Booking
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        ) : (
+                          <Button size="lg" className="w-full" disabled>
                             <CalendarDays className="h-5 w-5 mr-2" />
-                            Book Now
+                            Not Available for Booking
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>
-                              Book {currentApartment.title}
-                            </DialogTitle>
-                            <DialogDescription>
-                              ${currentApartment.price.toLocaleString()}/month
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                              <Label htmlFor="checkIn">Check-in Date</Label>
-                              <Input
-                                id="checkIn"
-                                type="date"
-                                value={checkIn}
-                                onChange={(e) => setCheckIn(e.target.value)}
-                                min={new Date().toISOString().split("T")[0]}
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="checkOut">Check-out Date</Label>
-                              <Input
-                                id="checkOut"
-                                type="date"
-                                value={checkOut}
-                                onChange={(e) => setCheckOut(e.target.value)}
-                                min={
-                                  checkIn ||
-                                  new Date().toISOString().split("T")[0]
-                                }
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="guests">Number of Guests</Label>
-                              <Input
-                                id="guests"
-                                type="number"
-                                min="1"
-                                value={guests}
-                                onChange={(e) =>
-                                  setGuests(parseInt(e.target.value) || 1)
-                                }
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button type="submit" onClick={handleBooking}>
-                              Confirm Booking
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                        )}
+                      </>
                     )}
                     <Button
                       onClick={handleContact}
