@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 
 import { Booking } from "@/types/booking";
 import axios from "axios";
+import { areIntervalsOverlapping, format, subDays } from "date-fns";
 
 const Bookings = () => {
   const API_APARTMENT_URL =
@@ -139,6 +140,41 @@ const Bookings = () => {
     setRescheduleDialogOpen(true);
   };
 
+  // Get other active bookings for the same apartment (excluding the current booking being rescheduled)
+  const otherActiveBookings: Booking[] = useMemo(() => {
+    if (!selectedBooking) return [];
+    return bookings.filter(
+      (b) =>
+        b.apartmentId === selectedBooking.apartmentId &&
+        b.id !== selectedBooking.id &&
+        (b.status === "pending" || b.status === "confirmed")
+    );
+  }, [bookings, selectedBooking]);
+
+  // Check if a specific date falls within any booked period
+  const isDateBooked = (date: Date): boolean => {
+    return otherActiveBookings.some((booking) => {
+      const start = new Date(booking.checkIn);
+      const end = subDays(booking.checkOut, 1);
+      return date >= start && date < end;
+    });
+  };
+
+  // Check if a date range overlaps with any existing booking
+  const hasBookingConflict = (
+    checkInDate: Date,
+    checkOutDate: Date
+  ): boolean => {
+    return otherActiveBookings.some((booking) => {
+      const existingStart = booking.checkIn;
+      const existingEnd = booking.checkOut;
+      return areIntervalsOverlapping(
+        { start: checkInDate, end: checkOutDate },
+        { start: existingStart, end: existingEnd }
+      );
+    });
+  };
+
   const handleReschedule = async () => {
     if (!selectedBooking || !newCheckIn || !newCheckOut) return;
 
@@ -146,6 +182,17 @@ const Bookings = () => {
       toast({
         title: "Invalid Dates",
         description: "Check-out date must be after check-in date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for booking conflicts
+    if (hasBookingConflict(newCheckIn, newCheckOut)) {
+      toast({
+        title: "Dates Not Available",
+        description:
+          "The selected dates overlap with another booking. Please choose different dates.",
         variant: "destructive",
       });
       return;
@@ -161,8 +208,8 @@ const Bookings = () => {
       const response = await axios.post(
         `${API_BOOKING_URL}/${selectedBooking.id}/reschedule`,
         {
-          checkIn: newCheckIn.toISOString().split("T")[0],
-          checkOut: newCheckOut.toISOString().split("T")[0],
+          checkIn: new Date(format(newCheckIn, "yyyy-MM-dd")),
+          checkOut: new Date(format(newCheckOut, "yyyy-MM-dd")),
           totalPrice,
         }
       );
@@ -172,8 +219,8 @@ const Bookings = () => {
         booking.id === selectedBooking.id
           ? {
               ...booking,
-              checkIn: newCheckIn.toISOString(),
-              checkOut: newCheckOut.toISOString(),
+              checkIn: format(newCheckIn, "yyyy-MM-dd"),
+              checkOut: format(newCheckOut, "yyyy-MM-dd"),
               nights,
               totalPrice,
             }
@@ -348,7 +395,8 @@ const Bookings = () => {
                             Reschedule
                           </Button>
                         )}
-                        {(booking.status === "pending" || booking.status === "confirmed")&& (
+                        {(booking.status === "pending" ||
+                          booking.status === "confirmed") && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="outline">Cancel Booking</Button>
@@ -433,12 +481,14 @@ const Bookings = () => {
                   <CalendarComponent
                     mode="single"
                     selected={newCheckIn}
-                    onSelect={(value) => {
-                      console.log(value);
-                      setNewCheckIn(value);
+                    onSelect={setNewCheckIn}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      if (date < today) return true;
+                      return isDateBooked(date);
                     }}
-                    disabled={(date) => date < new Date()}
-                    className="rounded-md border"
+                    className="rounded-md border pointer-events-auto"
                   />
                 </div>
                 <div className="space-y-2">
@@ -447,8 +497,11 @@ const Bookings = () => {
                     mode="single"
                     selected={newCheckOut}
                     onSelect={setNewCheckOut}
-                    disabled={(date) => !newCheckIn || date <= newCheckIn}
-                    className="rounded-md border"
+                    disabled={(date) => {
+                      if (!newCheckIn || date <= newCheckIn) return true;
+                      return isDateBooked(date);
+                    }}
+                    className="rounded-md border pointer-events-auto"
                   />
                 </div>
               </div>

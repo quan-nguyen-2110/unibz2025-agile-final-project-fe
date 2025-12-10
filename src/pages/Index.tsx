@@ -7,6 +7,7 @@ import axios from "axios";
 import { Apartment } from "@/types/apartment";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { format } from "date-fns";
 
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,7 +28,7 @@ const Index = () => {
     const params = new URLSearchParams();
     if (filters.bedrooms !== "all") params.set("bedrooms", filters.bedrooms);
     if (filters.address) params.set("address", filters.address);
-    if (filters.date) params.set("date", filters.date.toISOString());
+    if (filters.date) params.set("date", format(filters.date, "yyyy-MM-dd"));
     if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
     setSearchParams(params, { replace: true });
 

@@ -61,9 +61,15 @@ const AddApartment = () => {
     const payload = {
       ...formData,
       availableFrom: formData.availableFrom
-        ? formData.availableFrom.toISOString()
+        ? format(formData.availableFrom, "yyyy-MM-dd")
         : null,
-      base64Images: base64Images,
+      //base64Images: base64Images,
+      base64Images: [
+        "/src/assets/apartment-1.jpg",
+        "/src/assets/apartment-2.jpg",
+        "/src/assets/apartment-3.jpg",
+        "/src/assets/apartment-4.jpg",
+      ],
     };
 
     try {

@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { mockApartments } from "@/data/apartments";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import {
+  areIntervalsOverlapping,
+  format,
+  isWithinInterval,
+  subDays,
+} from "date-fns";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -45,6 +50,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Booking } from "@/types/booking";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const apartmentSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -101,8 +118,10 @@ const ApartmentDetail = () => {
 
   const { id } = useParams();
   const location = useLocation();
+   const navigate = useNavigate();
   const originalApartment = location.state?.apartment;
-  const [currentApartment, setCurrentApartment] = useState(originalApartment);
+  const [currentApartment, setCurrentApartment] =
+    useState<Apartment>(originalApartment);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,11 +130,11 @@ const ApartmentDetail = () => {
   const [editData, setEditData] = useState({
     title: "",
     address: "",
-    price: "",
-    bedrooms: "",
-    bathrooms: "",
-    area: "",
-    floor: "",
+    price: 0,
+    bedrooms: 0,
+    bathrooms: 0,
+    area: 0,
+    floor: 0,
     description: "",
     amenities: "",
     availableFrom: undefined as Date | undefined,
@@ -125,6 +144,37 @@ const ApartmentDetail = () => {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(1);
+  const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
+
+  // Get active bookings for this apartment (pending or confirmed, not cancelled)
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!currentApartment) {
+        setActiveBookings([]);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await axios.get(
+          `${API_BOOKING_URL}/apartment/${currentApartment.id}`
+        );
+        const allBookings: Booking[] = response.data;
+        const filtered = allBookings.filter(
+          (b) =>
+            b.apartmentId === currentApartment.id && b.status !== "cancelled"
+        );
+        setActiveBookings(filtered);
+      } catch (err) {
+        toast.error(err.message);
+        setActiveBookings([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [currentApartment, bookingDialogOpen, API_BOOKING_URL]);
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole");
@@ -154,6 +204,30 @@ const ApartmentDetail = () => {
       fetchApartment();
     }
   }, [id, originalApartment]);
+
+  // Check if a date range overlaps with existing bookings
+  const hasBookingConflict = (
+    checkInDate: Date,
+    checkOutDate: Date
+  ): boolean => {
+    return activeBookings.some((booking) => {
+      const existingStart = booking.checkIn;
+      const existingEnd = booking.checkOut;
+      return areIntervalsOverlapping(
+        { start: checkInDate, end: checkOutDate },
+        { start: existingStart, end: existingEnd }
+      );
+    });
+  };
+
+  // Check if a specific date is within any booked period
+  const isDateBooked = (date: Date): boolean => {
+    return activeBookings.some((booking) => {
+      const start = booking.checkIn;
+      const end = subDays(booking.checkOut, 1);
+      return isWithinInterval(date, { start, end });
+    });
+  };
 
   if (isLoading) {
     return (
@@ -200,14 +274,14 @@ const ApartmentDetail = () => {
     setEditData({
       title: currentApartment.title,
       address: currentApartment.address,
-      price: currentApartment.price.toString(),
-      bedrooms: currentApartment.bedrooms.toString(),
-      bathrooms: currentApartment.bathrooms.toString(),
-      area: currentApartment.area.toString(),
-      floor: currentApartment.floor.toString(),
+      price: currentApartment.price,
+      bedrooms: currentApartment.bedrooms,
+      bathrooms: currentApartment.bathrooms,
+      area: currentApartment.area,
+      floor: currentApartment.floor,
       description: currentApartment.description,
       amenities: currentApartment.amenities,
-      availableFrom: currentApartment.availableFrom,
+      availableFrom: new Date(currentApartment.availableFrom),
       base64Images: [...currentApartment.base64Images],
     });
     setIsEditMode(true);
@@ -231,6 +305,14 @@ const ApartmentDetail = () => {
       return;
     }
 
+    // Check for booking conflicts
+    if (hasBookingConflict(checkInDate, checkOutDate)) {
+      toast.error(
+        "This apartment is already booked for the selected dates. Please choose different dates."
+      );
+      return;
+    }
+
     const nights = Math.ceil(
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -239,8 +321,8 @@ const ApartmentDetail = () => {
     const booking = {
       //id: Date.now().toString(),
 
-      // ApartmentId: currentApartment.id,
-      ApartmentId: 'a4df9355-ad30-4d69-6197-08de259cb0f6',
+      ApartmentId: currentApartment.id,
+      // ApartmentId: "a4df9355-ad30-4d69-6197-08de259cb0f6",
 
       //apartmentTitle: currentApartment.title,
       // apartmentImage: currentApartment.base64Images[0],
@@ -298,15 +380,21 @@ const ApartmentDetail = () => {
         id: id,
         title: editData.title,
         address: editData.address,
-        price: parseFloat(editData.price),
-        bedrooms: parseInt(editData.bedrooms),
-        bathrooms: parseFloat(editData.bathrooms),
-        area: parseInt(editData.area),
-        floor: parseInt(editData.floor),
-        availableFrom: editData.availableFrom,
+        price: editData.price,
+        bedrooms: editData.bedrooms,
+        bathrooms: editData.bathrooms,
+        area: editData.area,
+        floor: editData.floor,
+        availableFrom: editData.availableFrom as Date | null,
         description: editData.description,
         amenities: editData.amenities,
-        base64Images: editData.base64Images,
+        //base64Images: editData.base64Images,
+        base64Images: [
+          "/src/assets/apartment-1.jpg",
+          "/src/assets/apartment-2.jpg",
+          "/src/assets/apartment-3.jpg",
+          "/src/assets/apartment-4.jpg",
+        ],
       });
 
       setIsSaving(true);
@@ -320,11 +408,11 @@ const ApartmentDetail = () => {
         ...currentApartment,
         title: editData.title,
         address: editData.address,
-        price: parseFloat(editData.price),
-        bedrooms: parseInt(editData.bedrooms),
-        bathrooms: parseFloat(editData.bathrooms),
-        area: parseInt(editData.area),
-        floor: parseInt(editData.floor),
+        price: editData.price,
+        bedrooms: editData.bedrooms,
+        bathrooms: editData.bathrooms,
+        area: editData.area,
+        floor: editData.floor,
         availableFrom: editData.availableFrom,
         description: editData.description,
         amenities: editData.amenities,
@@ -349,7 +437,7 @@ const ApartmentDetail = () => {
 
   const handleEditChange = (
     field: string,
-    value: string | Date | undefined
+    value: Date | string | undefined
   ) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
   };
@@ -433,10 +521,42 @@ const ApartmentDetail = () => {
 
           {isAdmin &&
             (!isEditMode ? (
-              <Button onClick={handleEdit} className="gap-2">
-                <Edit className="h-4 w-4" />
-                Edit
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleEdit} className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="gap-2">
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Apartment</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "
+                        {currentApartment.title}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          // TODO: Delete apartment logic here
+                          toast.success("Apartment deleted successfully");
+                          navigate("/");
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             ) : (
               <div className="flex gap-2">
                 <Button
@@ -861,29 +981,63 @@ const ApartmentDetail = () => {
                               </DialogHeader>
                               <div className="grid gap-4 py-4">
                                 <div className="grid gap-2">
-                                  <Label htmlFor="checkIn">Check-in Date</Label>
-                                  <Input
-                                    id="checkIn"
-                                    type="date"
-                                    value={checkIn}
-                                    onChange={(e) => setCheckIn(e.target.value)}
-                                    min={(() => {
-                                      const today = new Date();
-                                      const availableDate =
-                                        currentApartment.availableFrom
-                                          ? new Date(
-                                              currentApartment.availableFrom
-                                            )
-                                          : today;
-                                      const minDate =
-                                        today > availableDate
-                                          ? today
-                                          : availableDate;
-                                      return minDate
-                                        .toISOString()
-                                        .split("T")[0];
-                                    })()}
-                                  />
+                                  <Label>Check-in Date</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal",
+                                          !checkIn && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarDays className="mr-2 h-4 w-4" />
+                                        {checkIn ? (
+                                          format(new Date(checkIn), "PPP")
+                                        ) : (
+                                          <span>Select check-in date</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      className="w-auto p-0"
+                                      align="start"
+                                    >
+                                      <CalendarComponent
+                                        mode="single"
+                                        selected={
+                                          checkIn
+                                            ? new Date(checkIn)
+                                            : undefined
+                                        }
+                                        onSelect={(date) =>
+                                          setCheckIn(
+                                            date
+                                              ? format(date, "yyyy-MM-dd")
+                                              : ""
+                                          )
+                                        }
+                                        disabled={(date) => {
+                                          const today = new Date();
+                                          today.setHours(0, 0, 0, 0);
+                                          const availableDate =
+                                            currentApartment.availableFrom
+                                              ? new Date(
+                                                  currentApartment.availableFrom
+                                                )
+                                              : today;
+                                          const minDate =
+                                            today > availableDate
+                                              ? today
+                                              : availableDate;
+                                          if (date < minDate) return true;
+                                          return isDateBooked(date);
+                                        }}
+                                        initialFocus
+                                        className="pointer-events-auto"
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
                                   {currentApartment.availableFrom && (
                                     <p className="text-xs text-muted-foreground">
                                       Available from{" "}
@@ -895,36 +1049,57 @@ const ApartmentDetail = () => {
                                   )}
                                 </div>
                                 <div className="grid gap-2">
-                                  <Label htmlFor="checkOut">
-                                    Check-out Date
-                                  </Label>
-                                  <Input
-                                    id="checkOut"
-                                    type="date"
-                                    value={checkOut}
-                                    onChange={(e) =>
-                                      setCheckOut(e.target.value)
-                                    }
-                                    min={
-                                      checkIn ||
-                                      (() => {
-                                        const today = new Date();
-                                        const availableDate =
-                                          currentApartment.availableFrom
-                                            ? new Date(
-                                                currentApartment.availableFrom
-                                              )
-                                            : today;
-                                        const minDate =
-                                          today > availableDate
-                                            ? today
-                                            : availableDate;
-                                        return minDate
-                                          .toISOString()
-                                          .split("T")[0];
-                                      })()
-                                    }
-                                  />
+                                  <Label>Check-out Date</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal",
+                                          !checkOut && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarDays className="mr-2 h-4 w-4" />
+                                        {checkOut ? (
+                                          format(new Date(checkOut), "PPP")
+                                        ) : (
+                                          <span>Select check-out date</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      className="w-auto p-0"
+                                      align="start"
+                                    >
+                                      <CalendarComponent
+                                        mode="single"
+                                        selected={
+                                          checkOut
+                                            ? new Date(checkOut)
+                                            : undefined
+                                        }
+                                        onSelect={(date) =>
+                                          setCheckOut(
+                                            date
+                                              ? format(date, "yyyy-MM-dd")
+                                              : ""
+                                          )
+                                        }
+                                        disabled={(date) => {
+                                          const today = new Date();
+                                          today.setHours(0, 0, 0, 0);
+                                          const checkInDate = checkIn
+                                            ? new Date(checkIn)
+                                            : null;
+                                          const minDate = checkInDate || today;
+                                          if (date <= minDate) return true;
+                                          return isDateBooked(date);
+                                        }}
+                                        initialFocus
+                                        className="pointer-events-auto"
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
                                 </div>
                                 <div className="grid gap-2">
                                   <Label htmlFor="guests">
