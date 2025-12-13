@@ -118,7 +118,7 @@ const ApartmentDetail = () => {
 
   const { id } = useParams();
   const location = useLocation();
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const originalApartment = location.state?.apartment;
   const [currentApartment, setCurrentApartment] =
     useState<Apartment>(originalApartment);
@@ -173,7 +173,8 @@ const ApartmentDetail = () => {
       }
     };
 
-    fetchBookings();
+    const userRole = localStorage.getItem("userRole");
+    if (userRole === "user") fetchBookings();
   }, [currentApartment, bookingDialogOpen, API_BOOKING_URL]);
 
   useEffect(() => {
@@ -291,6 +292,25 @@ const ApartmentDetail = () => {
     setIsEditMode(false);
   };
 
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.delete(
+        `${API_APARTMENT_URL}/${currentApartment.id}`
+      );
+      console.log("Success:", response.data);
+      toast.success(
+        `Your Apartment ${currentApartment.title} has been deleted successfully.`
+      );
+
+      navigate("/");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleBooking = async () => {
     if (!checkIn || !checkOut) {
       toast.error("Please select check-in and check-out dates.");
@@ -357,14 +377,6 @@ const ApartmentDetail = () => {
     } finally {
       setIsLoading(false);
     }
-
-    // const existingBookings = JSON.parse(
-    //   localStorage.getItem("bookings") || "[]"
-    // );
-    // localStorage.setItem(
-    //   "bookings",
-    //   JSON.stringify([...existingBookings, booking])
-    // );
   };
 
   const handleSave = async () => {
@@ -544,11 +556,7 @@ const ApartmentDetail = () => {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={() => {
-                          // TODO: Delete apartment logic here
-                          toast.success("Apartment deleted successfully");
-                          navigate("/");
-                        }}
+                        onClick={handleDelete}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Delete
