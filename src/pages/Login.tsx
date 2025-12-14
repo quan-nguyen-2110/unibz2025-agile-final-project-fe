@@ -51,11 +51,14 @@ export default function Login() {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("userEmail", email);
           localStorage.setItem(
+            "userId",
+            response.data.user.id || "00000000-0000-0000-0000-000000000000"
+          );
+          localStorage.setItem(
             "userName",
             response.data.user.name || "Regular User"
           );
           localStorage.setItem("userRole", "user");
-
           localStorage.setItem(
             "userPhone",
             response.data.user.phone || "+1 (555) 111-1111"

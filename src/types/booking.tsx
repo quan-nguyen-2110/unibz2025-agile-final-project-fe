@@ -15,6 +15,7 @@ export interface Booking {
   cancelReason?: string;
   userName?: string;
   userPhone?: string;
+  userEmail?: string;
 }
 
 export type BookingStatus = Booking['status'];

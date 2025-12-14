@@ -77,7 +77,7 @@ export default function Register() {
     } catch (err) {
       toast({
         title: "Registration Error",
-        description: "Please check your details and try again.",
+        description: err.response?.data?.errors[0] || "Please check your details and try again.",
         variant: "destructive",
       });
     } finally {

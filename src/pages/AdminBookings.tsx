@@ -13,6 +13,7 @@ import {
   Loader2,
   User,
   Phone,
+  Mail,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -278,7 +279,7 @@ const AdminBookings = () => {
                     />
                   </div>
                   <div className="md:w-2/3 p-6">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start">
                       <div>
                         <h3
                           className="text-2xl font-bold mb-2 cursor-pointer hover:text-primary transition-colors"
@@ -292,27 +293,35 @@ const AdminBookings = () => {
                           <MapPin className="h-4 w-4" />
                           <span>{booking.apartmentAddress}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-muted-foreground mt-1">
-                          <User className="h-4 w-4" />
-                          <span>
-                            Booked by:{" "}
-                            <span className="font-medium text-foreground">
-                              {booking.userName || "Unknown User"}
-                            </span>
-                          </span>
-
-                          <span className="text-muted-foreground/50">•</span>
-
-                          <Phone className="h-4 w-4" />
-                          <span className="font-medium text-foreground">
-                            {booking.userPhone || "Unknown Phone"}
-                          </span>
-                        </div>
                       </div>
                       <Badge className={getStatusColor(booking.status)}>
                         {booking.status.charAt(0).toUpperCase() +
                           booking.status.slice(1)}
                       </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-muted-foreground mt-1 mb-4">
+                      <User className="h-4 w-4" />
+                      <span>
+                        Booked by:{" "}
+                        <span className="font-medium text-foreground">
+                          {booking.userName || "Unknown User"}
+                        </span>
+                      </span>
+
+                      <span className="text-muted-foreground/50">•</span>
+
+                      <Phone className="h-4 w-4" />
+                      <span className="font-medium text-foreground">
+                        {booking.userPhone || "Unknown Phone"}
+                      </span>
+
+                      <span className="text-muted-foreground/50">•</span>
+
+                      <Mail className="h-4 w-4" />
+                      <span className="font-medium text-foreground">
+                        {booking.userEmail || "Unknown Email"}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

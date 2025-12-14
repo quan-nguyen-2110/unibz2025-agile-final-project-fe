@@ -292,7 +292,7 @@ const ApartmentDetail = () => {
       floor: currentApartment.floor.toString(),
       description: currentApartment.description,
       amenities: currentApartment.amenities,
-      availableFrom: new Date(currentApartment.availableFrom),
+      availableFrom: currentApartment.availableFrom,
       base64Images: [...currentApartment.base64Images],
       noisy: currentApartment.noisy,
     });
@@ -357,6 +357,9 @@ const ApartmentDetail = () => {
       TotalPrice: totalPrice,
 
       // userId
+      UserId:
+        localStorage.getItem("userId") ||
+        "00000000-0000-0000-0000-000000000000",
     };
 
     setIsLoading(true);
@@ -401,7 +404,7 @@ const ApartmentDetail = () => {
         area: Number(editData.area),
         floor: Number(editData.floor),
 
-        availableFrom: editData.availableFrom as Date | null,
+        availableFrom: new Date(format(editData.availableFrom, "MMM dd, yyyy")),
         description: editData.description,
         amenities: editData.amenities,
         //base64Images: editData.base64Images,

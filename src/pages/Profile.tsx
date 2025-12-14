@@ -32,11 +32,13 @@ export default function Profile() {
     confirmPassword: "",
   });
   const [profileData, setProfileData] = useState({
+    id: "",
     name: "",
     email: "",
     phone: "",
-    bio: "",
   });
+  const [updatedProfileData, setUpdatedProfileData] = useState(profileData);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -48,32 +50,67 @@ export default function Profile() {
     }
 
     // Load user data from localStorage
-    const userName = localStorage.getItem("userName") || "Admin User";
-    const userEmail = localStorage.getItem("userEmail") || "admin@example.com";
+    const userId =
+      localStorage.getItem("userId") || "00000000-0000-0000-0000-000000000000";
+    const userName = localStorage.getItem("userName") || "Regular User";
+    setIsAdmin(
+      localStorage.getItem("userRole") === "Admin" ||
+        localStorage.getItem("userRole") === "admin"
+    );
+    const userEmail =
+      localStorage.getItem("userEmail") || "unknow_user@example.com";
     const phoneNumber = localStorage.getItem("userPhone") || "+1 234 567 8900";
     setProfileData({
+      id: userId,
       name: userName,
       email: userEmail,
       phone: phoneNumber,
-      bio: "Full-stack developer passionate about creating great user experiences.",
     });
   }, [navigate]);
 
-  const handleSave = () => {
+  useEffect(() => {
+    setUpdatedProfileData(profileData);
+  }, [profileData]);
+
+  const handleSave = async () => {
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      localStorage.setItem("userName", profileData.name);
-      localStorage.setItem("userEmail", profileData.email);
-      localStorage.setItem("userPhone", profileData.phone);
-      setIsEditing(false);
+    try {
+      const response = await axios.post(
+        `${API_USER_URL}/api/update-profile`,
+        updatedProfileData
+      );
+      console.log("Success:", response.data);
+      if (response.data && response.data.success) {
+        setProfileData(updatedProfileData);
+        localStorage.setItem("userName", updatedProfileData.name);
+        localStorage.setItem("userEmail", updatedProfileData.email);
+        localStorage.setItem("userPhone", updatedProfileData.phone);
+        setIsEditing(false);
+        toast({
+          title: "Profile updated",
+          description: "Your changes have been saved successfully",
+        });
+      } else {
+        toast({
+          title: "Updated Profile Failed",
+          description:
+            response?.data?.errors[0] ||
+            "Please check your inputs and try again",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Error saving profile:", err);
       toast({
-        title: "Profile updated",
-        description: "Your changes have been saved successfully",
+        title: "Updated Profile Failed",
+        description:
+          err?.data?.errors[0] || "Please check your inputs and try again",
+        variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -139,6 +176,7 @@ export default function Profile() {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userRole");
     localStorage.removeItem("userPhone");
+    localStorage.removeItem("userId");
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
@@ -167,9 +205,12 @@ export default function Profile() {
                 <Input
                   id="name"
                   type="text"
-                  value={profileData.name}
+                  value={updatedProfileData.name}
                   onChange={(e) =>
-                    setProfileData({ ...profileData, name: e.target.value })
+                    setUpdatedProfileData({
+                      ...updatedProfileData,
+                      name: e.target.value,
+                    })
                   }
                   disabled={!isEditing}
                 />
@@ -182,9 +223,12 @@ export default function Profile() {
                 <Input
                   id="email"
                   type="email"
-                  value={profileData.email}
+                  value={updatedProfileData.email}
                   onChange={(e) =>
-                    setProfileData({ ...profileData, email: e.target.value })
+                    setUpdatedProfileData({
+                      ...updatedProfileData,
+                      email: e.target.value,
+                    })
                   }
                   disabled={!isEditing}
                 />
@@ -194,132 +238,137 @@ export default function Profile() {
                 <Input
                   id="phone"
                   type="tel"
-                  value={profileData.phone}
+                  value={updatedProfileData.phone}
                   onChange={(e) =>
-                    setProfileData({ ...profileData, phone: e.target.value })
+                    setUpdatedProfileData({
+                      ...updatedProfileData,
+                      phone: e.target.value,
+                    })
                   }
                   disabled={!isEditing}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Input
-                  id="bio"
-                  type="text"
-                  value={profileData.bio}
-                  onChange={(e) =>
-                    setProfileData({ ...profileData, bio: e.target.value })
-                  }
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                {!isEditing ? (
-                  <Button onClick={() => setIsEditing(true)} className="flex-1">
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <>
+              {!isAdmin && (
+                <div className="flex gap-3 pt-4">
+                  {!isEditing ? (
                     <Button
-                      onClick={handleSave}
-                      disabled={isLoading}
+                      onClick={() => setIsEditing(true)}
                       className="flex-1"
                     >
-                      {isLoading ? "Saving..." : "Save Changes"}
+                      Edit Profile
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(false)}
-                      disabled={isLoading}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        {isLoading ? "Saving..." : "Save Changes"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setUpdatedProfileData(profileData);
+                          setIsEditing(false);
+                        }}
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
-            <Collapsible open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
-              <CardHeader>
-                <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80 transition-opacity">
-                  <div className="flex items-center gap-2">
-                    <KeyRound className="h-5 w-5" />
-                    <CardTitle>Change Password</CardTitle>
-                  </div>
-                  <ChevronDown
-                    className={`h-5 w-5 transition-transform ${
-                      isPasswordOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </CollapsibleTrigger>
-                <CardDescription>Update your account password</CardDescription>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          currentPassword: e.target.value,
-                        })
-                      }
+          {!isAdmin && (
+            <Card>
+              <Collapsible
+                open={isPasswordOpen}
+                onOpenChange={setIsPasswordOpen}
+              >
+                <CardHeader>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80 transition-opacity">
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="h-5 w-5" />
+                      <CardTitle>Change Password</CardTitle>
+                    </div>
+                    <ChevronDown
+                      className={`h-5 w-5 transition-transform ${
+                        isPasswordOpen ? "rotate-180" : ""
+                      }`}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          newPassword: e.target.value,
-                        })
+                  </CollapsibleTrigger>
+                  <CardDescription>
+                    Update your account password
+                  </CardDescription>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Input
+                        id="currentPassword"
+                        type="password"
+                        value={passwordData.currentPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            currentPassword: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            newPassword: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">
+                        Confirm New Password
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <Button
+                      onClick={handlePasswordChange}
+                      disabled={
+                        isLoading ||
+                        !passwordData.currentPassword ||
+                        !passwordData.newPassword ||
+                        !passwordData.confirmPassword
                       }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">
-                      Confirm New Password
-                    </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <Button
-                    onClick={handlePasswordChange}
-                    disabled={
-                      isLoading ||
-                      !passwordData.currentPassword ||
-                      !passwordData.newPassword ||
-                      !passwordData.confirmPassword
-                    }
-                    className="w-full"
-                  >
-                    {isLoading ? "Updating..." : "Update Password"}
-                  </Button>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+                      className="w-full"
+                    >
+                      {isLoading ? "Updating..." : "Update Password"}
+                    </Button>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
