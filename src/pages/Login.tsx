@@ -3,11 +3,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/Navbar";
+import axios from "axios";
 
 export default function Login() {
+  const API_USER_URL = (import.meta.env.VITE_USER_API_URL ||
+    "http://localhost:5000") as string;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -17,9 +28,8 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Simulate API call
       if (email === "admin" && password === "admin") {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userEmail", email);
@@ -30,25 +40,50 @@ export default function Login() {
           description: "Welcome back, Admin!",
         });
         navigate("/");
-      } else if (email === "user" && password === "user") {
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userEmail", email);
-        localStorage.setItem("userName", "Regular User");
-        localStorage.setItem("userRole", "user");
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-        navigate("/");
       } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password",
-          variant: "destructive",
+        const response = await axios.post(`${API_USER_URL}/api/login`, {
+          email,
+          password,
         });
+        console.log("Success:", response.data);
+
+        if (response.data && response.data.success) {
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("userEmail", email);
+          localStorage.setItem(
+            "userName",
+            response.data.user.name || "Regular User"
+          );
+          localStorage.setItem("userRole", "user");
+
+          localStorage.setItem(
+            "userPhone",
+            response.data.user.phone || "+1 (555) 111-1111"
+          );
+
+          toast({
+            title: "Login successful",
+            description: "Welcome back!",
+          });
+
+          navigate("/");
+        } else {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password",
+            variant: "destructive",
+          });
+        }
       }
+    } catch (err) {
+      toast({
+        title: "Login Failed",
+        description: "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -58,7 +93,9 @@ export default function Login() {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Login</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardDescription>
+              Enter your credentials to access your account
+            </CardDescription>
           </CardHeader>
           <form onSubmit={handleLogin}>
             <CardContent className="space-y-4">
@@ -84,7 +121,10 @@ export default function Login() {
                   required
                 />
               </div>
-              <Link to="/forgot-password" className="text-sm text-primary hover:underline block">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary hover:underline block"
+              >
                 Forgot password?
               </Link>
             </CardContent>

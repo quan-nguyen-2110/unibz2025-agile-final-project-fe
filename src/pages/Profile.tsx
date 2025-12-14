@@ -3,13 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/Navbar";
 import { User, Mail, LogOut, KeyRound, ChevronDown } from "lucide-react";
+import axios from "axios";
 
 export default function Profile() {
+  const API_USER_URL = (import.meta.env.VITE_USER_API_URL ||
+    "http://localhost:5000") as string;
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
@@ -37,10 +50,11 @@ export default function Profile() {
     // Load user data from localStorage
     const userName = localStorage.getItem("userName") || "Admin User";
     const userEmail = localStorage.getItem("userEmail") || "admin@example.com";
+    const phoneNumber = localStorage.getItem("userPhone") || "+1 234 567 8900";
     setProfileData({
       name: userName,
       email: userEmail,
-      phone: "+1 234 567 8900",
+      phone: phoneNumber,
       bio: "Full-stack developer passionate about creating great user experiences.",
     });
   }, [navigate]);
@@ -52,6 +66,7 @@ export default function Profile() {
     setTimeout(() => {
       localStorage.setItem("userName", profileData.name);
       localStorage.setItem("userEmail", profileData.email);
+      localStorage.setItem("userPhone", profileData.phone);
       setIsEditing(false);
       toast({
         title: "Profile updated",
@@ -61,7 +76,7 @@ export default function Profile() {
     }, 800);
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: "Error",
@@ -71,29 +86,51 @@ export default function Profile() {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (passwordData.newPassword.length < 8) {
       toast({
         title: "Error",
-        description: "Password must be at least 6 characters",
+        description: "Password must be at least 8 characters",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
+    try {
+      const response = await axios.post(`${API_USER_URL}/api/reset-password`, {
+        email: profileData.email,
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        newPassword2: passwordData.confirmPassword,
       });
-      setIsPasswordOpen(false);
+      console.log("Success:", response.data);
+      if (response.data.success) {
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+        setIsPasswordOpen(false);
+        toast({
+          title: "Password updated",
+          description: "Your password has been changed successfully",
+        });
+      } else {
+        toast({
+          title: "Reset password failed",
+          description: "Current password is incorrect",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully",
+        title: "Reset password failed",
+        description: "An error occurred while changing password",
+        variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const handleLogout = () => {
@@ -101,6 +138,7 @@ export default function Profile() {
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("userPhone");
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
@@ -119,7 +157,9 @@ export default function Profile() {
                 <User className="h-5 w-5" />
                 Profile Information
               </CardTitle>
-              <CardDescription>View and update your personal information</CardDescription>
+              <CardDescription>
+                View and update your personal information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -128,7 +168,9 @@ export default function Profile() {
                   id="name"
                   type="text"
                   value={profileData.name}
-                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, name: e.target.value })
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -141,7 +183,9 @@ export default function Profile() {
                   id="email"
                   type="email"
                   value={profileData.email}
-                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, email: e.target.value })
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -151,7 +195,9 @@ export default function Profile() {
                   id="phone"
                   type="tel"
                   value={profileData.phone}
-                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, phone: e.target.value })
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -161,7 +207,9 @@ export default function Profile() {
                   id="bio"
                   type="text"
                   value={profileData.bio}
-                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, bio: e.target.value })
+                  }
                   disabled={!isEditing}
                 />
               </div>
@@ -202,7 +250,11 @@ export default function Profile() {
                     <KeyRound className="h-5 w-5" />
                     <CardTitle>Change Password</CardTitle>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${isPasswordOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`h-5 w-5 transition-transform ${
+                      isPasswordOpen ? "rotate-180" : ""
+                    }`}
+                  />
                 </CollapsibleTrigger>
                 <CardDescription>Update your account password</CardDescription>
               </CardHeader>
@@ -214,7 +266,12 @@ export default function Profile() {
                       id="currentPassword"
                       type="password"
                       value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          currentPassword: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -223,21 +280,38 @@ export default function Profile() {
                       id="newPassword"
                       type="password"
                       value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          newPassword: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label htmlFor="confirmPassword">
+                      Confirm New Password
+                    </Label>
                     <Input
                       id="confirmPassword"
                       type="password"
                       value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <Button
                     onClick={handlePasswordChange}
-                    disabled={isLoading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                    disabled={
+                      isLoading ||
+                      !passwordData.currentPassword ||
+                      !passwordData.newPassword ||
+                      !passwordData.confirmPassword
+                    }
                     className="w-full"
                   >
                     {isLoading ? "Updating..." : "Update Password"}

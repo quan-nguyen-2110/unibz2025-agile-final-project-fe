@@ -13,6 +13,8 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'cancelled';
   createdAt: string;
   cancelReason?: string;
+  userName?: string;
+  userPhone?: string;
 }
 
 export type BookingStatus = Booking['status'];

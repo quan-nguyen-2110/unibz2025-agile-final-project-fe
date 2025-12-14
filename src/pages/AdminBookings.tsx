@@ -11,6 +11,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  User,
+  Phone,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -289,6 +291,22 @@ const AdminBookings = () => {
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <MapPin className="h-4 w-4" />
                           <span>{booking.apartmentAddress}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground mt-1">
+                          <User className="h-4 w-4" />
+                          <span>
+                            Booked by:{" "}
+                            <span className="font-medium text-foreground">
+                              {booking.userName || "Unknown User"}
+                            </span>
+                          </span>
+
+                          <span className="text-muted-foreground/50">•</span>
+
+                          <Phone className="h-4 w-4" />
+                          <span className="font-medium text-foreground">
+                            {booking.userPhone || "Unknown Phone"}
+                          </span>
                         </div>
                       </div>
                       <Badge className={getStatusColor(booking.status)}>

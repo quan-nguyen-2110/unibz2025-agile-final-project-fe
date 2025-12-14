@@ -113,10 +113,7 @@ const apartmentSchema = z.object({
   base64Images: z
     .array(z.string().min(1, "Image data cannot be empty"))
     .min(1, "At least one image is required"),
-  noisy: z
-    .string()
-    .trim()
-    .min(1, "At least one noisy level is selected"),
+  noisy: z.string().trim().min(1, "At least one noisy level is selected"),
 });
 
 const ApartmentDetail = () => {
@@ -353,22 +350,13 @@ const ApartmentDetail = () => {
     const totalPrice = currentApartment.price * nights;
 
     const booking = {
-      //id: Date.now().toString(),
-
       ApartmentId: currentApartment.id,
-      // ApartmentId: "a4df9355-ad30-4d69-6197-08de259cb0f6",
-
-      //apartmentTitle: currentApartment.title,
-      // apartmentImage: currentApartment.base64Images[0],
-      // apartmentAddress: currentApartment.address,
-      // apartmentPrice: currentApartment.price,
       CheckIn: checkIn,
       CheckOut: checkOut,
       Guests: guests,
-      //nights,
       TotalPrice: totalPrice,
-      //status: "pending" as const,
-      //createdAt: new Date().toISOString(),
+
+      // userId
     };
 
     setIsLoading(true);
