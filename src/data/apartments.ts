@@ -17,7 +17,8 @@ export const mockApartments: Apartment[] = [
     description: "Beautiful modern loft in the heart of downtown with stunning city views. Features high ceilings, hardwood floors, and floor-to-ceiling windows.",
     base64Images: [apartment1, apartment2, apartment3, apartment4],
     availableFrom: new Date("2024-03-01"),
-    amenities: "Parking, Gym, Pool, Balcony, Pet Friendly"
+    amenities: "Parking, Gym, Pool, Balcony, Pet Friendly",
+    noisy: "noisy",
   },
   {
     id: "2",
@@ -31,7 +32,8 @@ export const mockApartments: Apartment[] = [
     description: "Charming studio apartment perfect for singles or couples. Recently renovated with modern appliances and finishes.",
     base64Images: [apartment2, apartment1, apartment3],
     availableFrom: new Date("2024-02-15"),
-    amenities: "Laundry, Air Conditioning, Storage"
+    amenities: "Laundry, Air Conditioning, Storage",
+    noisy: "noisy",
   },
   {
     id: "3",
@@ -45,7 +47,8 @@ export const mockApartments: Apartment[] = [
     description: "Perfect family home with spacious rooms and a large backyard. Close to schools and parks.",
     base64Images: [apartment3, apartment4, apartment1],
     availableFrom: new Date("2024-04-01"),
-    amenities: "Garden, Garage, Fireplace, Pet Friendly"
+    amenities: "Garden, Garage, Fireplace, Pet Friendly",
+    noisy: "moderate",
   },
   {
     id: "4",
@@ -59,7 +62,8 @@ export const mockApartments: Apartment[] = [
     description: "Stunning penthouse with panoramic city views. Features top-of-the-line finishes, private terrace, and concierge service.",
     base64Images: [apartment4, apartment2, apartment1, apartment3],
     availableFrom: new Date("2024-03-15"),
-    amenities: "Concierge, Pool, Gym, Parking, Balcony, Security"
+    amenities: "Concierge, Pool, Gym, Parking, Balcony, Security",
+    noisy: "moderate",
   },
   {
     id: "5",
@@ -73,7 +77,8 @@ export const mockApartments: Apartment[] = [
     description: "Artistic studio in vibrant neighborhood. High ceilings and natural light throughout.",
     base64Images: [apartment1, apartment3],
     availableFrom: new Date("2024-02-20"),
-    amenities: "Air Conditioning, Storage, Pet Friendly"
+    amenities: "Air Conditioning, Storage, Pet Friendly",
+    noisy: "quiet",
   },
   {
     id: "6",
@@ -87,6 +92,7 @@ export const mockApartments: Apartment[] = [
     description: "Modern apartment with open floor plan and designer kitchen. Walking distance to shops and restaurants.",
     base64Images: [apartment2, apartment4, apartment3],
     availableFrom: new Date("2024-03-10"),
-    amenities: "Parking, Gym, Balcony, Laundry"
+    amenities: "Parking, Gym, Balcony, Laundry",
+    noisy: "quiet",
   }
 ];

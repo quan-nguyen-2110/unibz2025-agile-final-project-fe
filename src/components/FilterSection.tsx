@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { CalendarIcon, Search } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { NoisyLevel } from "@/types/apartment";
 
 interface FilterSectionProps {
   onFilterChange: (filters: FilterState) => void;
@@ -26,6 +27,7 @@ export interface FilterState {
   address: string;
   date: Date | undefined;
   maxPrice: string;
+  noisy: string;
 }
 
 export const FilterSection = ({
@@ -49,6 +51,7 @@ export const FilterSection = ({
       address: "",
       date: undefined,
       maxPrice: "",
+      noisy: "all",
     };
     setFilters(resetFilters);
     onFilterChange(resetFilters);
@@ -100,6 +103,24 @@ export const FilterSection = ({
             value={filters.maxPrice}
             onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
           />
+        </div>
+
+        <div>
+          <Label htmlFor="noisy">Noise Level</Label>
+          <Select
+            value={filters.noisy}
+            onValueChange={(value) => handleFilterChange("noisy", value)}
+          >
+            <SelectTrigger id="noisy">
+              <SelectValue placeholder="Any" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any</SelectItem>
+              <SelectItem value="quiet">Quiet</SelectItem>
+              <SelectItem value="moderate">Moderate</SelectItem>
+              <SelectItem value="noisy">Noisy</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div>

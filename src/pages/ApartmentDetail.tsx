@@ -22,6 +22,7 @@ import {
   Trash2,
   Building2,
   CalendarDays,
+  Volume2,
 } from "lucide-react";
 import {
   Popover,
@@ -40,7 +41,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-import { Apartment } from "@/types/apartment";
+import { Apartment, NoisyLevel } from "@/types/apartment";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +63,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const apartmentSchema = z.object({
   id: z.string().min(1, "ID is required"),
@@ -105,15 +113,19 @@ const apartmentSchema = z.object({
   base64Images: z
     .array(z.string().min(1, "Image data cannot be empty"))
     .min(1, "At least one image is required"),
+  noisy: z
+    .string()
+    .trim()
+    .min(1, "At least one noisy level is selected"),
 });
 
 const ApartmentDetail = () => {
   const API_APARTMENT_URL =
-    (import.meta.env.VITE_API_URL || "https://localhost:7147") +
+    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
     "/api/Apartment";
 
   const API_BOOKING_URL =
-    (import.meta.env.VITE_API_URL || "https://localhost:7221") +
+    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
     "/api/Bookings";
 
   const { id } = useParams();
@@ -130,15 +142,16 @@ const ApartmentDetail = () => {
   const [editData, setEditData] = useState({
     title: "",
     address: "",
-    price: 0,
-    bedrooms: 0,
-    bathrooms: 0,
-    area: 0,
-    floor: 0,
+    price: "",
+    bedrooms: "",
+    bathrooms: "",
+    area: "",
+    floor: "",
     description: "",
     amenities: "",
     availableFrom: undefined as Date | undefined,
     base64Images: [] as string[],
+    noisy: "moderate" as NoisyLevel,
   });
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
   const [checkIn, setCheckIn] = useState("");
@@ -275,15 +288,16 @@ const ApartmentDetail = () => {
     setEditData({
       title: currentApartment.title,
       address: currentApartment.address,
-      price: currentApartment.price,
-      bedrooms: currentApartment.bedrooms,
-      bathrooms: currentApartment.bathrooms,
-      area: currentApartment.area,
-      floor: currentApartment.floor,
+      price: currentApartment.price.toString(),
+      bedrooms: currentApartment.bedrooms.toString(),
+      bathrooms: currentApartment.bathrooms.toString(),
+      area: currentApartment.area.toString(),
+      floor: currentApartment.floor.toString(),
       description: currentApartment.description,
       amenities: currentApartment.amenities,
       availableFrom: new Date(currentApartment.availableFrom),
       base64Images: [...currentApartment.base64Images],
+      noisy: currentApartment.noisy,
     });
     setIsEditMode(true);
   };
@@ -392,11 +406,13 @@ const ApartmentDetail = () => {
         id: id,
         title: editData.title,
         address: editData.address,
-        price: editData.price,
-        bedrooms: editData.bedrooms,
-        bathrooms: editData.bathrooms,
-        area: editData.area,
-        floor: editData.floor,
+
+        price: Number(editData.price),
+        bedrooms: Number(editData.bedrooms),
+        bathrooms: Number(editData.bathrooms),
+        area: Number(editData.area),
+        floor: Number(editData.floor),
+
         availableFrom: editData.availableFrom as Date | null,
         description: editData.description,
         amenities: editData.amenities,
@@ -407,6 +423,8 @@ const ApartmentDetail = () => {
           "/src/assets/apartment-3.jpg",
           "/src/assets/apartment-4.jpg",
         ],
+
+        noisy: editData.noisy,
       });
 
       setIsSaving(true);
@@ -420,15 +438,16 @@ const ApartmentDetail = () => {
         ...currentApartment,
         title: editData.title,
         address: editData.address,
-        price: editData.price,
-        bedrooms: editData.bedrooms,
-        bathrooms: editData.bathrooms,
-        area: editData.area,
-        floor: editData.floor,
+        price: parseFloat(editData.price),
+        bedrooms: parseInt(editData.bedrooms),
+        bathrooms: parseFloat(editData.bathrooms),
+        area: parseInt(editData.area),
+        floor: parseInt(editData.floor),
         availableFrom: editData.availableFrom,
         description: editData.description,
         amenities: editData.amenities,
         base64Images: [...editData.base64Images],
+        noisy: editData.noisy,
       };
 
       setCurrentApartment(updatedApartment);
@@ -449,7 +468,7 @@ const ApartmentDetail = () => {
 
   const handleEditChange = (
     field: string,
-    value: Date | string | undefined
+    value: number | Date | string | undefined
   ) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
   };
@@ -861,6 +880,13 @@ const ApartmentDetail = () => {
                             : "Not Available"}
                         </div>
                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Noise</span>
+                        <div className="flex items-center gap-1 font-semibold capitalize">
+                          <Volume2 className="h-4 w-4" />
+                          {currentApartment.noisy}
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <div className="space-y-3">
@@ -957,6 +983,24 @@ const ApartmentDetail = () => {
                             Clear date
                           </Button>
                         )}
+                      </div>
+                      <div>
+                        <Label htmlFor="noisy">Noise</Label>
+                        <Select
+                          value={editData.noisy}
+                          onValueChange={(value: NoisyLevel) =>
+                            handleEditChange("noisy", value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select noise level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="quiet">Quiet</SelectItem>
+                            <SelectItem value="moderate">Moderate</SelectItem>
+                            <SelectItem value="noisy">Noisy</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   )}

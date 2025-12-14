@@ -36,11 +36,11 @@ import axios from "axios";
 
 const AdminBookings = () => {
   const API_APARTMENT_URL =
-    (import.meta.env.VITE_API_URL || "https://localhost:7147") +
+    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
     "/api/Apartment";
 
   const API_BOOKING_URL =
-    (import.meta.env.VITE_API_URL || "https://localhost:7221") +
+    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
     "/api/Bookings";
 
   const navigate = useNavigate();

@@ -20,6 +20,7 @@ const Index = () => {
       ? new Date(searchParams.get("date")!)
       : undefined,
     maxPrice: searchParams.get("maxPrice") || "",
+    noisy: searchParams.get("noisy") || "all",
   }));
 
   const [apartments, setApartments] = useState<Apartment[]>([]);
@@ -30,6 +31,7 @@ const Index = () => {
     if (filters.address) params.set("address", filters.address);
     if (filters.date) params.set("date", format(filters.date, "yyyy-MM-dd"));
     if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+    if (filters.noisy !== "all") params.set("noisy", filters.noisy);
     setSearchParams(params, { replace: true });
 
     const fetchApartments = async () => {
@@ -81,6 +83,11 @@ const Index = () => {
 
       // Filter by date
       if (filters.date && apartment.availableFrom > filters.date) {
+        return false;
+      }
+
+      // Filter by noisy level
+      if (filters.noisy !== "all" && apartment.noisy !== filters.noisy) {
         return false;
       }
 

@@ -11,6 +11,9 @@ export interface Apartment {
   base64Images: string[];
   availableFrom?: Date;
   amenities: string;
+  noisy: NoisyLevel;
 
   code?: string;
 }
+
+export type NoisyLevel = "quiet" | "moderate" | "noisy";

@@ -17,13 +17,25 @@ import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import axios from "axios";
+import { NoisyLevel } from "@/types/apartment";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AddApartment = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const API_URL =
-    (import.meta.env.VITE_API_URL || "https://localhost:7147") +
+  const API_APARTMENT_URL =
+    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
     "/api/Apartment";
+
+  const API_BOOKING_URL =
+    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
+    "/api/Bookings";
 
   const [formData, setFormData] = useState({
     title: "",
@@ -36,6 +48,7 @@ const AddApartment = () => {
     description: "",
     amenities: "",
     availableFrom: undefined as Date | undefined,
+    noisy: "moderate" as NoisyLevel,
 
     //testing
     code: "a2",
@@ -60,6 +73,11 @@ const AddApartment = () => {
 
     const payload = {
       ...formData,
+      price: Number(formData.price),
+      area: Number(formData.area),
+      floor: Number(formData.floor),
+      bedrooms: Number(formData.bedrooms),
+      bathrooms: Number(formData.bathrooms),
       availableFrom: formData.availableFrom
         ? format(formData.availableFrom, "yyyy-MM-dd")
         : null,
@@ -74,7 +92,7 @@ const AddApartment = () => {
 
     try {
       setIsSubmitting(true);
-      const response = await axios.post(`${API_URL}`, payload);
+      const response = await axios.post(`${API_APARTMENT_URL}`, payload);
       console.log("Success:", response.data);
 
       setFormData({
@@ -88,6 +106,7 @@ const AddApartment = () => {
         description: "",
         amenities: "",
         availableFrom: undefined,
+        noisy: "moderate",
 
         code: "a2",
       });
@@ -101,7 +120,7 @@ const AddApartment = () => {
     }
   };
 
-  const handleChange = (field: string, value: string | Date | undefined) => {
+  const handleChange = (field: string, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -268,6 +287,25 @@ const AddApartment = () => {
                   value={formData.amenities}
                   onChange={(e) => handleChange("amenities", e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="noisy">Noise *</Label>
+                <Select
+                  value={formData.noisy}
+                  onValueChange={(value: NoisyLevel) =>
+                    handleChange("noisy", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select noise level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quiet">Quiet</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="noisy">Noisy</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

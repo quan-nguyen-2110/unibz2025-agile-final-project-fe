@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
+  console.log("Env:" + import.meta.env.MODE),
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
