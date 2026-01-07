@@ -21,8 +21,9 @@ import { User, Mail, LogOut, KeyRound, ChevronDown } from "lucide-react";
 import axios from "axios";
 
 export default function Profile() {
-  const API_USER_URL = (import.meta.env.VITE_USER_API_URL ||
-    "http://localhost:5000") as string;
+  const API_USER_URL =
+    (import.meta.env.VITE_USER_API_URL || "http://localhost:5000") +
+    "/api/user";
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
@@ -77,7 +78,7 @@ export default function Profile() {
 
     try {
       const response = await axios.post(
-        `${API_USER_URL}/api/update-profile`,
+        `${API_USER_URL}/update-profile`,
         updatedProfileData
       );
       console.log("Success:", response.data);
@@ -134,7 +135,7 @@ export default function Profile() {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_USER_URL}/api/reset-password`, {
+      const response = await axios.post(`${API_USER_URL}/reset-password`, {
         email: profileData.email,
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,

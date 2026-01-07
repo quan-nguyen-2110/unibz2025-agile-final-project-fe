@@ -38,15 +38,11 @@ import { Booking } from "@/types/booking";
 import axios from "axios";
 import { areIntervalsOverlapping, format, subDays } from "date-fns";
 
+const API_BOOKING_URL =
+  (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
+  "/api/bookings";
+
 const Bookings = () => {
-  const API_APARTMENT_URL =
-    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
-    "/api/Apartment";
-
-  const API_BOOKING_URL =
-    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
-    "/api/Bookings";
-
   const navigate = useNavigate();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -66,14 +62,7 @@ const Bookings = () => {
     const fetchBookings = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get<Booking[]>(
-          "https://localhost:7221/api/bookings/",
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await axios.get<Booking[]>(`${API_BOOKING_URL}/`);
 
         setBookings(response.data);
       } catch (err) {

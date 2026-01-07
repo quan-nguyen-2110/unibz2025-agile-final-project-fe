@@ -116,15 +116,15 @@ const apartmentSchema = z.object({
   noisy: z.string().trim().min(1, "At least one noisy level is selected"),
 });
 
+const API_APARTMENT_URL =
+  (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
+  "/api/apartment";
+
+const API_BOOKING_URL =
+  (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
+  "/api/bookings";
+
 const ApartmentDetail = () => {
-  const API_APARTMENT_URL =
-    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
-    "/api/Apartment";
-
-  const API_BOOKING_URL =
-    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
-    "/api/Bookings";
-
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -185,7 +185,7 @@ const ApartmentDetail = () => {
 
     const userRole = localStorage.getItem("userRole");
     if (userRole === "user") fetchBookings();
-  }, [currentApartment, bookingDialogOpen, API_BOOKING_URL]);
+  }, [currentApartment, bookingDialogOpen]);
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole");
@@ -196,12 +196,7 @@ const ApartmentDetail = () => {
         setIsLoading(true);
         try {
           const response = await axios.get<Apartment>(
-            "https://localhost:7147/api/apartment/" + id,
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
+            `${API_APARTMENT_URL}/${id}`
           );
 
           setCurrentApartment(response.data);
@@ -364,7 +359,7 @@ const ApartmentDetail = () => {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_BOOKING_URL}`, booking);
+      const response = await axios.post(`${API_BOOKING_URL}/`, booking);
       console.log("Success:", response.data);
 
       toast.success(
@@ -409,10 +404,10 @@ const ApartmentDetail = () => {
         amenities: editData.amenities,
         //base64Images: editData.base64Images,
         base64Images: [
-          "/src/assets/apartment-1.jpg",
-          "/src/assets/apartment-2.jpg",
-          "/src/assets/apartment-3.jpg",
-          "/src/assets/apartment-4.jpg",
+          "/assets/apartment-1.jpg",
+          "/assets/apartment-2.jpg",
+          "/assets/apartment-3.jpg",
+          "/assets/apartment-4.jpg",
         ],
 
         noisy: editData.noisy,

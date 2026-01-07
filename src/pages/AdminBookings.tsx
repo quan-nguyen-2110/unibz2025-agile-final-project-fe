@@ -37,15 +37,11 @@ import { Label } from "@/components/ui/label";
 import { Booking } from "@/types/booking";
 import axios from "axios";
 
+const API_BOOKING_URL =
+  (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
+  "/api/bookings";
+
 const AdminBookings = () => {
-  const API_APARTMENT_URL =
-    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
-    "/api/Apartment";
-
-  const API_BOOKING_URL =
-    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
-    "/api/Bookings";
-
   const navigate = useNavigate();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -65,14 +61,7 @@ const AdminBookings = () => {
     const fetchBookings = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get<Booking[]>(
-          "https://localhost:7221/api/bookings/",
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await axios.get<Booking[]>(`${API_BOOKING_URL}/`);
 
         setBookings(response.data);
         setFilteredBookings(response.data);

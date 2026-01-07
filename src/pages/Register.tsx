@@ -16,8 +16,8 @@ import { Navbar } from "@/components/Navbar";
 import axios from "axios";
 
 export default function Register() {
-  const API_USER_URL = (import.meta.env.VITE_USER_API_URL ||
-    "http://localhost:5000") as string;
+  const API_USER_URL =
+    (import.meta.env.VITE_USER_API_URL || "http://localhost:5000") + "/api/user";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,7 +32,7 @@ export default function Register() {
 
   const validatePhoneNumber = (phone: string) => {
     const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-    return phoneRegex.test(phone.replace(/\s/g, ''));
+    return phoneRegex.test(phone.replace(/\s/g, ""));
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_USER_URL}/api/register`, user);
+      const response = await axios.post(`${API_USER_URL}/register`, user);
       console.log("Success:", response.data);
 
       toast({
@@ -77,7 +77,9 @@ export default function Register() {
     } catch (err) {
       toast({
         title: "Registration Error",
-        description: err.response?.data?.errors[0] || "Please check your details and try again.",
+        description:
+          err.response?.data?.errors[0] ||
+          "Please check your details and try again.",
         variant: "destructive",
       });
     } finally {
@@ -131,7 +133,9 @@ export default function Register() {
                   type="tel"
                   placeholder="+1 (555) 123-4567"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   required
                 />
               </div>

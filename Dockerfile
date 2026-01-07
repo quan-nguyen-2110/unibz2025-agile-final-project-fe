@@ -19,15 +19,18 @@ COPY . .
 # Build for production (outputs to /dist)
 RUN npm run build
 
-
-# ---- Step 2: Serve static files using Nginx ----
+# # ---- Step 2: Serve static files using Nginx ----
 FROM nginx:stable-alpine
 
 # Remove default Nginx static files
 RUN rm -rf /usr/share/nginx/html/*
 
+# COPY build /usr/share/nginx/html
+
 # Copy Vite build output to Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80 for incoming requests
 EXPOSE 80

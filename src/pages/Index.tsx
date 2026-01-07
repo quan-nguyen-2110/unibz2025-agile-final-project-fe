@@ -9,6 +9,10 @@ import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 
+const API_APARTMENT_URL =
+  (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
+  "/api/apartment";
+
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltering, setIsFiltering] = useState(false);
@@ -37,14 +41,7 @@ const Index = () => {
     const fetchApartments = async () => {
       setIsFiltering(true);
       try {
-        const response = await axios.get<Apartment[]>(
-          "https://localhost:7147/api/apartment",
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await axios.get<Apartment[]>(`${API_APARTMENT_URL}/`);
 
         setApartments(response.data);
       } catch (err) {

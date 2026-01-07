@@ -16,8 +16,9 @@ import { Navbar } from "@/components/Navbar";
 import axios from "axios";
 
 export default function Login() {
-  const API_USER_URL = (import.meta.env.VITE_USER_API_URL ||
-    "http://localhost:5000") as string;
+  const API_USER_URL =
+    (import.meta.env.VITE_USER_API_URL || "http://localhost:5000") +
+    "/api/user";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +42,7 @@ export default function Login() {
         });
         navigate("/");
       } else {
-        const response = await axios.post(`${API_USER_URL}/api/login`, {
+        const response = await axios.post(`${API_USER_URL}/login`, {
           email,
           password,
         });

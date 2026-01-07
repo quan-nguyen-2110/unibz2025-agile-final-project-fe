@@ -26,16 +26,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const API_APARTMENT_URL =
+  (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
+  "/api/apartment";
+
 const AddApartment = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const API_APARTMENT_URL =
-    (import.meta.env.VITE_APARTMENT_API_URL || "https://localhost:7147") +
-    "/api/Apartment";
-
-  const API_BOOKING_URL =
-    (import.meta.env.VITE_BOOKING_API_URL || "https://localhost:7221") +
-    "/api/Bookings";
 
   const [formData, setFormData] = useState({
     title: "",
@@ -83,16 +80,16 @@ const AddApartment = () => {
         : null,
       //base64Images: base64Images,
       base64Images: [
-        "/src/assets/apartment-1.jpg",
-        "/src/assets/apartment-2.jpg",
-        "/src/assets/apartment-3.jpg",
-        "/src/assets/apartment-4.jpg",
+        "/assets/apartment-1.jpg",
+        "/assets/apartment-2.jpg",
+        "/assets/apartment-3.jpg",
+        "/assets/apartment-4.jpg",
       ],
     };
 
     try {
       setIsSubmitting(true);
-      const response = await axios.post(`${API_APARTMENT_URL}`, payload);
+      const response = await axios.post(`${API_APARTMENT_URL}/`, payload);
       console.log("Success:", response.data);
 
       setFormData({
