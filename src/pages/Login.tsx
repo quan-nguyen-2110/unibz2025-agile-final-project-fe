@@ -91,7 +91,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/0">
       <Navbar />
       <div className="container mx-auto px-4 py-12 flex items-center justify-center">
         <Card className="w-full max-w-md">

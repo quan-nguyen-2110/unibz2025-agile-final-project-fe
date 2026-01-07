@@ -237,7 +237,7 @@ const ApartmentDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background/0">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse space-y-4">
@@ -253,7 +253,7 @@ const ApartmentDetail = () => {
 
   if (!currentApartment) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background/0">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
@@ -525,7 +525,7 @@ const ApartmentDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/0">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">

@@ -21,6 +21,7 @@ const App = () => (
   console.log("Env:" + import.meta.env.MODE),
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <div className="animated-bg" aria-hidden="true" />
       <Toaster />
       <Sonner />
       <BrowserRouter>

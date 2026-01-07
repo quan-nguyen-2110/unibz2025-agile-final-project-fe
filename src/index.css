@@ -83,5 +83,56 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
   }
 }
+
+/* Animated background wrapper - uses a div approach for cross-browser support */
+.animated-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: 
+    radial-gradient(ellipse 150% 100% at 0% 0%, hsl(200 90% 65% / 0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 150% 100% at 100% 20%, hsl(186 85% 55% / 0.40) 0%, transparent 70%),
+    radial-gradient(ellipse 150% 100% at 50% 100%, hsl(210 80% 60% / 0.35) 0%, transparent 70%);
+  animation: gradientShift 12s ease-in-out infinite alternate;
+}
+
+.dark .animated-bg {
+  background: 
+    radial-gradient(ellipse 150% 100% at 0% 0%, hsl(200 90% 50% / 0.50) 0%, transparent 70%),
+    radial-gradient(ellipse 150% 100% at 100% 20%, hsl(186 85% 45% / 0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 150% 100% at 50% 100%, hsl(210 80% 45% / 0.40) 0%, transparent 70%);
+}
+
+@keyframes gradientShift {
+  0% {
+    --bg-x1: 20%;
+    --bg-y1: 10%;
+    --bg-x2: 80%;
+    --bg-y2: 30%;
+    --bg-x3: 50%;
+    --bg-y3: 85%;
+  }
+  50% {
+    --bg-x1: 25%;
+    --bg-y1: 15%;
+    --bg-x2: 75%;
+    --bg-y2: 25%;
+    --bg-x3: 55%;
+    --bg-y3: 80%;
+  }
+  100% {
+    --bg-x1: 18%;
+    --bg-y1: 12%;
+    --bg-x2: 82%;
+    --bg-y2: 35%;
+    --bg-x3: 48%;
+    --bg-y3: 88%;
+  }
+}
+
